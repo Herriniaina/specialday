@@ -1,0 +1,11 @@
+user:
+    email:
+        not_blank: "Email cannot be null."
+        invalid: "Email address '{{ value }}' is not valid."
+    password:
+        too_short: "Password must be at least {{ limit }} characters."
+        not_blank: "Password cannot be null."
+    roles:
+        invalid: "Role '{{ value }}' doesn't exist."
+    phone:
+        invalid: "Phone number is not valid."

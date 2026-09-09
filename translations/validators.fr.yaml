@@ -1,0 +1,11 @@
+user:
+    email:
+        not_blank: "L'adresse email est obligatoire."
+        invalid: "L'adresse email '{{ value }}' n'est pas valide."
+    password:
+        too_short: "Le mot de passe doit contenir au moins {{ limit }} caractères."
+        not_blak: "Le mot de passe est obligatoire."
+    roles:
+        invalid: "Le rôle '{{ value }}' n'existe pas."
+    phone:
+        invalid: "Le numéro de tél. n'est pas valide."
