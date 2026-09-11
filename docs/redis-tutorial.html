@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redis — Guide pour développeur senior</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --surface: #ffffff;
+    --surface-alt: #f0f1f4;
+    --text: #1c1e21;
+    --text-muted: #5b6068;
+    --border: #e3e5e9;
+    --accent: #b3261e;
+    --accent-soft: #fdeceb;
+    --code-bg: #1e1f26;
+    --code-text: #e8e9ee;
+    --code-key: #f4a261;
+    --note-bg: #eef5ff;
+    --note-border: #7fb3f0;
+    --warn-bg: #fff6e5;
+    --warn-border: #e6a817;
+    --good-bg: #eafaf0;
+    --good-border: #34a853;
+    --radius: 10px;
+    --maxw: 880px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16171b;
+      --surface: #1e1f25;
+      --surface-alt: #24262d;
+      --text: #eceef1;
+      --text-muted: #9aa0a8;
+      --border: #33353c;
+      --accent: #ff7a70;
+      --accent-soft: #3a2224;
+      --code-bg: #0e0f13;
+      --code-text: #e8e9ee;
+      --code-key: #f4a261;
+      --note-bg: #1b2a3a;
+      --note-border: #3a6ea5;
+      --warn-bg: #33290f;
+      --warn-border: #b8860b;
+      --good-bg: #12301f;
+      --good-border: #2e8b57;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    padding-block: 2.5rem;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 240px minmax(0, var(--maxw));
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav.toc { position: static; order: 2; }
+  }
+
+  header.hero {
+    grid-column: 1 / -1;
+    margin-bottom: 1rem;
+  }
+
+  header.hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    margin: 0 0 0.4rem;
+    letter-spacing: -0.02em;
+  }
+
+  header.hero p.subtitle {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    margin: 0;
+    max-width: 65ch;
+  }
+
+  header.hero .tags {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  header.hero .tags span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 2rem;
+    font-size: 0.88rem;
+    border-left: 2px solid var(--border);
+    padding-left: 1rem;
+  }
+
+  nav.toc .toc-title {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    font-weight: 700;
+  }
+
+  nav.toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
+  }
+
+  nav.toc li {
+    counter-increment: toc;
+    margin-bottom: 0.45rem;
+  }
+
+  nav.toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    display: block;
+  }
+
+  nav.toc a::before {
+    content: counter(toc) ". ";
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  nav.toc a:hover { color: var(--text); }
+
+  main { min-width: 0; }
+
+  section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.6rem 1.8rem;
+    margin-bottom: 1.4rem;
+    scroll-margin-top: 1.5rem;
+  }
+
+  section h2 {
+    margin-top: 0;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  section h2 .num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 6px;
+    padding: 0.15rem 0.5rem;
+  }
+
+  section h3 {
+    font-size: 1.05rem;
+    margin: 1.4rem 0 0.5rem;
+  }
+
+  p { margin: 0.6rem 0; }
+
+  ul, ol { padding-left: 1.3rem; }
+  li { margin: 0.3rem 0; }
+
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.88em;
+    background: var(--surface-alt);
+    padding: 0.12rem 0.4rem;
+    border-radius: 5px;
+  }
+
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1rem 1.1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.55;
+    margin: 0.8rem 0;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  .cmd { color: var(--code-key); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .callout {
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin: 0.9rem 0;
+    font-size: 0.92rem;
+    border: 1px solid;
+  }
+
+  .callout.note { background: var(--note-bg); border-color: var(--note-border); }
+  .callout.warn { background: var(--warn-bg); border-color: var(--warn-border); }
+  .callout.good { background: var(--good-bg); border-color: var(--good-border); }
+
+  .callout strong { display: block; margin-bottom: 0.25rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .project-note {
+    border-radius: 8px;
+    background: var(--surface-alt);
+    padding: 0.8rem 1rem;
+    margin: 0.9rem 0;
+    font-size: 0.92rem;
+    border-left: 3px solid var(--accent);
+  }
+
+  .project-note strong { color: var(--accent); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 620px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    section { padding: 1.2rem 1.1rem; }
+  }
+
+  .card {
+    background: var(--surface-alt);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+  }
+
+  .card h4 {
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  footer {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-top: 1rem;
+  }
+
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Redis, pour de vrai</h1>
+    <p class="subtitle">Ce qu'un développeur senior doit comprendre pour utiliser Redis en production sans se faire surprendre — structures de données, persistance, files de messages, atomicité, scaling et pièges classiques.</p>
+    <div class="tags">
+      <span>In-memory</span>
+      <span>Single-threaded</span>
+      <span>Streams &amp; Queues</span>
+      <span>Ops &amp; monitoring</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <div class="toc-title">Sommaire</div>
+    <ol>
+      <li><a href="#c-est-quoi">C'est quoi, vraiment</a></li>
+      <li><a href="#structures">Structures de données</a></li>
+      <li><a href="#persistance">Persistance : RDB vs AOF</a></li>
+      <li><a href="#expiration">TTL &amp; éviction mémoire</a></li>
+      <li><a href="#atomicite">Atomicité, transactions, Lua</a></li>
+      <li><a href="#queues">Files de messages avec Redis</a></li>
+      <li><a href="#pubsub">Pub/Sub vs Streams vs Listes</a></li>
+      <li><a href="#projet">Dans ce projet</a></li>
+      <li><a href="#pieges">Pièges classiques</a></li>
+      <li><a href="#securite">Sécurité</a></li>
+      <li><a href="#scaling">Scaling &amp; haute dispo</a></li>
+      <li><a href="#monitoring">Monitoring &amp; debug</a></li>
+      <li><a href="#cheatsheet">Cheat sheet CLI</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section id="c-est-quoi">
+      <h2><span class="num">1</span>C'est quoi, vraiment</h2>
+      <p>Redis est un <strong>store clé-valeur en mémoire</strong>, à la base. Mais le réduire à "un cache" fait manquer l'essentiel : c'est surtout un <strong>serveur de structures de données</strong> distant — listes, sets, hash, sorted sets, streams — avec des opérations atomiques dessus, exécutées par un moteur <strong>mono-thread</strong> (pour la partie exécution des commandes).</p>
+      <p>Cette architecture mono-thread est la clé pour comprendre Redis : il n'y a pas de race condition entre deux commandes, chaque commande s'exécute jusqu'au bout avant la suivante. C'est ce qui rend Redis prévisible et rapide pour des opérations courtes, mais aussi ce qui le rend <strong>vulnérable à une seule commande lente</strong> qui bloque tout le serveur.</p>
+      <div class="callout note">
+        <strong>À retenir</strong>
+        Redis n'est pas une base de données relationnelle réduite. C'est un outil pour des accès O(1)/O(log n) sur des structures en mémoire, avec de la persistance en option — pas pour des requêtes complexes ou des jointures.
+      </div>
+    </section>
+
+    <section id="structures">
+      <h2><span class="num">2</span>Structures de données</h2>
+      <p>Connaître les structures et <em>quand</em> les utiliser est ce qui distingue un usage senior d'un usage "je stocke tout en JSON dans une String".</p>
+      <table>
+        <thead><tr><th>Type</th><th>Cas d'usage typique</th><th>Commandes clés</th></tr></thead>
+        <tbody>
+          <tr><td><code>String</code></td><td>Cache de valeur, compteur, verrou simple</td><td><code>SET</code>, <code>GET</code>, <code>INCR</code>, <code>SETNX</code></td></tr>
+          <tr><td><code>Hash</code></td><td>Objet avec plusieurs champs (ex: profil utilisateur)</td><td><code>HSET</code>, <code>HGET</code>, <code>HGETALL</code></td></tr>
+          <tr><td><code>List</code></td><td>File FIFO simple, historique borné</td><td><code>LPUSH</code>, <code>RPOP</code>, <code>LRANGE</code></td></tr>
+          <tr><td><code>Set</code></td><td>Appartenance, unicité, intersections (ex: tags communs)</td><td><code>SADD</code>, <code>SISMEMBER</code>, <code>SINTER</code></td></tr>
+          <tr><td><code>Sorted Set</code></td><td>Classement, top-N, rate limiting par fenêtre</td><td><code>ZADD</code>, <code>ZRANGE</code>, <code>ZINCRBY</code></td></tr>
+          <tr><td><code>Stream</code></td><td>File de messages avec consumer groups, event log</td><td><code>XADD</code>, <code>XREADGROUP</code>, <code>XACK</code></td></tr>
+          <tr><td><code>HyperLogLog</code></td><td>Cardinalité approximative (visiteurs uniques)</td><td><code>PFADD</code>, <code>PFCOUNT</code></td></tr>
+          <tr><td><code>Bitmap</code></td><td>Flags compacts par utilisateur (ex: présence quotidienne)</td><td><code>SETBIT</code>, <code>BITCOUNT</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <strong>Piège</strong>
+        Une <code>List</code> ou un <code>Hash</code> avec des dizaines de milliers d'éléments devient un "big key" : une seule commande dessus (ex: <code>LRANGE 0 -1</code>, <code>HGETALL</code>) peut bloquer le thread principal pendant plusieurs millisecondes et dégrader toute l'instance.
+      </div>
+    </section>
+
+    <section id="persistance">
+      <h2><span class="num">3</span>Persistance : RDB vs AOF</h2>
+      <p>Redis est en mémoire, mais peut persister sur disque de deux façons, combinables :</p>
+      <div class="grid-2">
+        <div class="card">
+          <h4>RDB (snapshot)</h4>
+          <p>Dump binaire complet à intervalles réguliers (<code>SAVE</code> / <code>BGSAVE</code>). Compact, rapide à recharger. <strong>Risque</strong> : perte de toutes les écritures depuis le dernier snapshot en cas de crash.</p>
+        </div>
+        <div class="card">
+          <h4>AOF (append-only file)</h4>
+          <p>Journal de toutes les commandes d'écriture, rejouées au redémarrage. Plus durable (config <code>appendfsync everysec</code> ou <code>always</code>), mais fichier plus lourd et reload plus lent.</p>
+        </div>
+      </div>
+      <p>En pratique : si Redis est utilisé comme <strong>cache pur</strong> (données reconstructibles depuis une source de vérité), la persistance est secondaire, voire désactivable. S'il porte des <strong>données qu'on ne peut pas se permettre de perdre</strong> (queue de jobs, sessions critiques), il faut AOF avec un <code>fsync</code> agressif — ou ne pas utiliser Redis comme source de vérité pour ces données.</p>
+    </section>
+
+    <section id="expiration">
+      <h2><span class="num">4</span>TTL &amp; éviction mémoire</h2>
+      <p>Le TTL (<code>EXPIRE</code>, <code>SET ... EX</code>) est le mécanisme central pour un usage cache. Sans lui, Redis grossit indéfiniment.</p>
+      <p>Quand la mémoire max (<code>maxmemory</code>) est atteinte, la politique d'éviction (<code>maxmemory-policy</code>) décide quoi supprimer :</p>
+      <ul>
+        <li><code>noeviction</code> — refuse les écritures (défaut). Dangereux si non anticipé : l'appli casse au lieu de perdre des données silencieusement.</li>
+        <li><code>allkeys-lru</code> / <code>allkeys-lfu</code> — supprime les clés les moins récemment/fréquemment utilisées, peu importe le TTL. Bon pour un cache pur.</li>
+        <li><code>volatile-lru</code> / <code>volatile-ttl</code> — n'évince que les clés qui ont un TTL. Permet de mélanger cache et données persistantes dans la même instance sans risque pour ces dernières.</li>
+      </ul>
+      <div class="callout note">
+        <strong>Règle senior</strong>
+        Choisis la politique d'éviction <em>avant</em> la mise en prod, pas après un incident mémoire. <code>noeviction</code> + pas de <code>maxmemory</code> défini = crash OOM garanti à terme.
+      </div>
+    </section>
+
+    <section id="atomicite">
+      <h2><span class="num">5</span>Atomicité, transactions, Lua</h2>
+      <p>Chaque commande individuelle est atomique. Pour enchaîner plusieurs opérations de façon atomique, trois outils :</p>
+      <ul>
+        <li><strong><code>MULTI</code>/<code>EXEC</code></strong> — met en file une séquence de commandes, exécutées d'un bloc. Pas de rollback si une commande échoue en cours de route (contrairement à une transaction SQL).</li>
+        <li><strong><code>WATCH</code></strong> — verrouillage optimiste : annule le <code>MULTI</code>/<code>EXEC</code> si une clé surveillée a changé entre-temps.</li>
+        <li><strong>Scripts Lua (<code>EVAL</code>)</strong> — exécutés atomiquement côté serveur, sans aller-retour réseau entre chaque étape. C'est l'outil pour de la logique conditionnelle complexe (ex: "décrémente un stock seulement si &gt; 0").</li>
+      </ul>
+      <pre><code>-- Exemple : décrément conditionnel atomique via Lua
+<span class="cmd">EVAL</span> "if redis.call('GET', KEYS[1]) > 0 then return redis.call('DECR', KEYS[1]) else return -1 end" 1 stock:sku42</code></pre>
+    </section>
+
+    <section id="queues">
+      <h2><span class="num">6</span>Files de messages avec Redis</h2>
+      <p>Trois façons de faire une queue, avec des garanties très différentes :</p>
+      <table>
+        <thead><tr><th>Approche</th><th>Garanties</th><th>Quand l'utiliser</th></tr></thead>
+        <tbody>
+          <tr><td><code>LPUSH</code> / <code>BRPOP</code></td><td>Aucune : si le consumer crash après <code>BRPOP</code>, le message est perdu</td><td>Fire-and-forget, tolérant à la perte</td></tr>
+          <tr><td>Pub/Sub</td><td>Aucune persistance : un message publié sans abonné connecté est perdu</td><td>Notifications temps réel, broadcast</td></tr>
+          <tr><td><strong>Streams</strong> (<code>XADD</code> + consumer groups)</td><td>At-least-once : un message n'est retiré qu'après <code>XACK</code> explicite</td><td>Traitement fiable de jobs, event sourcing</td></tr>
+        </tbody>
+      </table>
+      <p>Le pattern Stream + <strong>consumer group</strong> ressemble à Kafka en plus léger :</p>
+      <pre><code><span class="cmd">XADD</span> messages '*' payload '{"type":"welcome_email"}'
+<span class="cmd">XREADGROUP</span> GROUP symfony consumer-1 COUNT 1 STREAMS messages '>'
+<span class="cmd">XACK</span> messages symfony &lt;message-id&gt;</code></pre>
+      <p>Si un consumer crash entre le <code>XREADGROUP</code> et le <code>XACK</code>, le message reste dans la <em>pending entries list</em> (PEL) du groupe — récupérable via <code>XPENDING</code> / <code>XCLAIM</code> par un autre consumer. C'est ce qui donne la garantie "at-least-once".</p>
+      <div class="callout warn">
+        <strong>Piège</strong>
+        At-least-once ≠ exactly-once. Si le traitement du message n'est pas idempotent (ex: envoyer un email deux fois), un redémarrage de worker au mauvais moment peut causer un traitement en double. Concevoir les handlers pour être idempotents.
+      </div>
+    </section>
+
+    <section id="pubsub">
+      <h2><span class="num">7</span>Pub/Sub vs Streams vs Listes — résumé mental</h2>
+      <ul>
+        <li><strong>Pub/Sub</strong> = radio en direct. Rien n'est stocké, si personne n'écoute au moment de l'émission, c'est perdu.</li>
+        <li><strong>Liste (LPUSH/BRPOP)</strong> = pile de post-its. Simple, mais un post-it pris par un worker qui crash est perdu.</li>
+        <li><strong>Stream</strong> = journal d'événements avec accusés de réception. Le bon choix dès qu'on ne peut pas se permettre de perdre un message.</li>
+      </ul>
+    </section>
+
+    <section id="projet">
+      <h2><span class="num">8</span>Dans ce projet</h2>
+      <p>Ce dépôt utilise déjà Redis comme <strong>transport Symfony Messenger</strong> (<code>config/packages/messenger.yaml</code>), via la DSN :</p>
+      <pre><code>MESSENGER_TRANSPORT_DSN=redis://redis:6379/messages</code></pre>
+      <div class="project-note">
+        <strong>Concrètement :</strong> Symfony Messenger utilise un <strong>Stream Redis</strong> nommé <code>messages</code>, avec un consumer group par défaut nommé <code>symfony</code>. Le service <code>worker</code> (défini dans <code>compose.override.yaml</code>) exécute en continu <code>messenger:consume async</code>, ce qui correspond à des appels répétés de <code>XREADGROUP</code> + <code>XACK</code>.
+      </div>
+      <p>Pour inspecter la queue manuellement :</p>
+      <pre><code>docker compose exec redis redis-cli XLEN messages
+docker compose exec redis redis-cli XRANGE messages - + COUNT 20
+docker compose exec redis redis-cli XINFO GROUPS messages
+docker compose exec redis redis-cli XPENDING messages symfony</code></pre>
+      <p>Les messages qui épuisent la stratégie de retry (<code>DeadlineRetryStrategy</code>) partent vers le transport <code>failed</code> — mais celui-ci est Doctrine, pas Redis (voir <code>config/packages/messenger.yaml</code>), donc consultable via <code>bin/console messenger:failed:show</code>.</p>
+    </section>
+
+    <section id="pieges">
+      <h2><span class="num">9</span>Pièges classiques</h2>
+      <ul>
+        <li><strong><code>KEYS *</code> en prod</strong> — parcourt tout l'espace de clés en bloquant le thread. Toujours utiliser <code>SCAN</code> (curseur, non-bloquant) à la place.</li>
+        <li><strong>Big keys</strong> — une seule clé avec des millions d'éléments (list, hash, set) ralentit toute commande dessus, et complique la réplication/le resharding.</li>
+        <li><strong>Pas de TTL par défaut</strong> — oublier l'expiration transforme le cache en fuite mémoire progressive.</li>
+        <li><strong>Redis comme unique source de vérité</strong> — sans persistance robuste (AOF + réplication), une perte de l'instance = perte de données. Ne jamais y stocker ce qui n'existe nulle part ailleurs sans l'avoir décidé consciemment.</li>
+        <li><strong>Latence réseau sous-estimée</strong> — chaque aller-retour compte quand on enchaîne des commandes en boucle depuis l'appli ; préférer le <em>pipelining</em> ou <code>MGET</code>/<code>MSET</code> pour grouper les appels.</li>
+        <li><strong>Confondre expiration et éviction</strong> — une clé avec TTL expiré n'est pas forcément supprimée activement immédiatement (suppression lazy ou par cycle actif) ; ça ne remplace pas une vraie politique <code>maxmemory-policy</code>.</li>
+      </ul>
+    </section>
+
+    <section id="securite">
+      <h2><span class="num">10</span>Sécurité</h2>
+      <ul>
+        <li>Redis n'a historiquement <strong>aucune authentification par défaut</strong>. Toujours définir <code>requirepass</code> (ou utiliser ACL depuis Redis 6+ pour des permissions par utilisateur).</li>
+        <li>Ne jamais exposer le port <code>6379</code> directement sur internet — le binder sur une interface privée / réseau Docker interne, comme c'est déjà le cas ici (<code>compose.yaml</code> n'expose le port qu'en dev via l'override).</li>
+        <li>Activer TLS pour les connexions inter-services en prod si le réseau n'est pas déjà isolé/de confiance.</li>
+        <li>Désactiver ou renommer les commandes dangereuses en prod (<code>FLUSHALL</code>, <code>FLUSHDB</code>, <code>CONFIG</code>) via <code>rename-command</code>.</li>
+      </ul>
+    </section>
+
+    <section id="scaling">
+      <h2><span class="num">11</span>Scaling &amp; haute disponibilité</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Réplication</h4>
+          <p>Un primary + N replicas en lecture seule. Résout la charge en lecture, pas la disponibilité en écriture : si le primary tombe, il faut une bascule.</p>
+        </div>
+        <div class="card">
+          <h4>Sentinel</h4>
+          <p>Surveille le primary et orchestre le failover automatique vers un replica. Bon pour la haute dispo sans sharding.</p>
+        </div>
+        <div class="card">
+          <h4>Cluster</h4>
+          <p>Sharding automatique des clés sur plusieurs nœuds (16384 hash slots). Nécessaire quand un seul nœud ne suffit plus en volume/débit.</p>
+        </div>
+        <div class="card">
+          <h4>Limite structurelle</h4>
+          <p>Le cluster distribue les clés, mais les opérations multi-clés (<code>MGET</code>, transactions) exigent que les clés soient sur le même slot (<em>hash tags</em> : <code>{user123}:profile</code>).</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="monitoring">
+      <h2><span class="num">12</span>Monitoring &amp; debug</h2>
+      <pre><code><span class="cmd">INFO</span>                     <span style="color:#8f97a3"># stats globales : mémoire, clients, réplication...</span>
+<span class="cmd">SLOWLOG GET</span> 10          <span style="color:#8f97a3"># dernières commandes lentes</span>
+<span class="cmd">MONITOR</span>                  <span style="color:#8f97a3"># stream en direct de toutes les commandes (jamais en prod à fort trafic)</span>
+<span class="cmd">redis-cli --latency</span>      <span style="color:#8f97a3"># mesure la latence réseau/serveur en continu</span>
+<span class="cmd">redis-cli --bigkeys</span>      <span style="color:#8f97a3"># scan pour repérer les clés volumineuses</span></code></pre>
+      <div class="callout warn">
+        <strong>Attention</strong>
+        <code>MONITOR</code> a un coût de performance notable sur une instance très sollicitée — à réserver au debug ciblé, jamais en observabilité continue.
+      </div>
+    </section>
+
+    <section id="cheatsheet">
+      <h2><span class="num">13</span>Cheat sheet CLI</h2>
+      <pre><code><span class="cmd">SET</span> key value EX 60        <span style="color:#8f97a3"># set avec TTL 60s</span>
+<span class="cmd">TTL</span> key                     <span style="color:#8f97a3"># temps restant avant expiration</span>
+<span class="cmd">SCAN</span> 0 MATCH "user:*" COUNT 100
+<span class="cmd">DEL</span> key1 key2
+<span class="cmd">EXPIRE</span> key 3600
+<span class="cmd">TYPE</span> key                    <span style="color:#8f97a3"># connaître le type d'une clé</span>
+<span class="cmd">OBJECT ENCODING</span> key         <span style="color:#8f97a3"># encodage interne (optimisation mémoire)</span>
+<span class="cmd">DBSIZE</span>                      <span style="color:#8f97a3"># nombre de clés dans la DB courante</span>
+<span class="cmd">CONFIG GET</span> maxmemory-policy</code></pre>
+    </section>
+
+  </main>
+
+  <footer>
+    Document interne — projet SpecialDay. Généré comme support de référence Redis.
+  </footer>
+
+</div>
+</body>
+</html>

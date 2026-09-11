@@ -19,8 +19,8 @@ Everything application code lives in `src/`, PSR-4 root `App\` → `src/`
 
 | Layer | Path | May depend on | MUST NOT import |
 |---|---|---|---|
-| **Domain** | `src/Domain/[Context]/` | Pure PHP only (plus tiny value libs like `ramsey/uuid`) | Symfony, Doctrine, EasyAdmin, any framework/ORM |
-| **Application** | `src/Application/[Context]/` | Domain | Symfony/Doctrine in **use case classes** (see DTO note below) |
+| **Domain** | `src/Domain/[Context]/` | Pure PHP only. | Symfony, Doctrine, EasyAdmin, any framework/ORM |
+| **Application** | `src/Application/[Context]/` | Domain | Pure php only. |
 | **Infrastructure** | `src/Infrastructure/[Context]/` | Application + Domain + any framework | — (this is the only place framework code is allowed) |
 
 Dependencies point **inward only**: Infrastructure → Application → Domain. Domain
@@ -75,11 +75,9 @@ exposed as a primitive.
 
 namespace App\Domain\Booking;
 
-use Ramsey\Uuid\UuidInterface;
-
 class Booking
 {
-    private ?UuidInterface $id = null;
+    private ?string $id = null;
 
     public function __construct(
         public string $reference,
@@ -376,14 +374,3 @@ entity** FQCN, fields configured in `configureFields()`. Register it in
   (`use App\Infrastructure\User\Entity\User as UserEntity;`).
 - IDs: UUID v7 everywhere, column type `uuid`, generator `UuidV7Generator`.
 - DB columns: snake_case. PHP properties on DTOs/domain: camelCase.
-
----
-
-## Known deviations in current code (don't propagate)
-
-- `Application\User\RegisterUserRequest` imports Symfony Validator constraints —
-  legacy; keep new DTOs framework-free.
-- `Infrastructure\User\Repository\UserRepository` has **no alias** for
-  `App\Domain\User\UserRepositoryInterface` in `config/services.yaml`. Add the
-  alias when touching that wiring; always add it for new repositories.
-- Empty `src/Controller/` — skeleton leftover, ignore.

@@ -61,6 +61,7 @@ security:
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/user/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/company, methods: [POST], roles: PUBLIC_ACCESS }
         - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
