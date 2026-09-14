@@ -43,4 +43,13 @@ class UserCrudController extends AbstractCrudController
 
         return $fields;
     }
+
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setPageTitle(Crud::PAGE_INDEX, 'Liste des utilisateurs')
+            ->setPageTitle(Crud::PAGE_NEW, 'Ajouter un utilisateur')
+            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier l\'utilisateur')
+        ;
+    }
 }

@@ -45,6 +45,11 @@ class Company
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $youtubeProfile = null;
 
+    public function __toString(): string
+    {
+        return $this->name ?? '';
+    }
+
     public function getId(): ?string
     {
         return $this->id;

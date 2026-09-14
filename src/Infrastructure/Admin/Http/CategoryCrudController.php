@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Admin\Http;
 
 use App\Infrastructure\Category\Entity\Category;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
@@ -21,5 +22,14 @@ class CategoryCrudController extends AbstractCrudController
             TextField::new('title'),
             TextEditorField::new('description'),
         ];
+    }
+
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setPageTitle(Crud::PAGE_INDEX, 'Liste des catégories de préstations')
+            ->setPageTitle(Crud::PAGE_NEW, 'Ajouter une catégorie')
+            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier la catégorie')
+        ;
     }
 }
