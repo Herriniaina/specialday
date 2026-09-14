@@ -3,33 +3,26 @@
 namespace App\Application\Company;
 
 use App\Domain\Company\Company;
-use App\Domain\Company\CompanyEmailAlreadyExistsException;
 use App\Domain\Company\CompanyRepositoryInterface;
 use App\Application\Shared\IdGeneratorInterface;
+use App\Application\Shared\SlugGeneratorInterface;
 
 class CreateCompany
 {
     public function __construct(
         private CompanyRepositoryInterface $companyRepository,
-        private CompanyNotifierInterface $notifier,
         private IdGeneratorInterface $idGenerator,
+        private SlugGeneratorInterface $slugGenerator,
     ) {
     }
 
     public function execute(CreateCompanyRequest $request): Company
     {
-        if ($this->companyRepository->existsByEmail($request->email)) {
-            throw new CompanyEmailAlreadyExistsException('Company email already exists.');
-        }
-
         $company = new Company(
             id: $this->idGenerator->generate(),
             name: $request->name,
-            email: $request->email,
+            slug: $this->generateUniqueSlug($request->name),
             createdAt: new \DateTimeImmutable(),
-            accessCode: $this->generateAccessCode(),
-            token: bin2hex(random_bytes(32)),
-            userId: $request->userId,
             nif: $request->nif,
             stat: $request->stat,
             rcs: $request->rcs,
@@ -40,20 +33,21 @@ class CreateCompany
         );
 
         $this->companyRepository->save($company);
-        $this->notifier->companyRegistered($company);
 
         return $company;
     }
 
-    private function generateAccessCode(): string
+    private function generateUniqueSlug(string $name): string
     {
-        $alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-        $code = '';
+        $baseSlug = $this->slugGenerator->slugify($name);
+        $slug = $baseSlug;
+        $suffix = 2;
 
-        for ($i = 0; $i < 6; $i++) {
-            $code .= $alphabet[random_int(0, \strlen($alphabet) - 1)];
+        while ($this->companyRepository->existsBySlug($slug)) {
+            $slug = \sprintf('%s-%d', $baseSlug, $suffix);
+            $suffix++;
         }
 
-        return $code;
+        return $slug;
     }
 }

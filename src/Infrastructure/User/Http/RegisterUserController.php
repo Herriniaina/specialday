@@ -29,6 +29,7 @@ final class RegisterUserController extends ApiAbstractController
                 firstName: $input->firstName,
                 lastName: $input->lastName,
                 phoneNumber: $input->phoneNumber,
+                companyId: $input->companyId,
             ));
         } catch (EmailAlreadyExistsException $e) {
             return $this->conflict($e->getMessage());

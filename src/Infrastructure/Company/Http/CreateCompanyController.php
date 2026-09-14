@@ -4,7 +4,6 @@ namespace App\Infrastructure\Company\Http;
 
 use App\Application\Company\CreateCompany;
 use App\Application\Company\CreateCompanyRequest;
-use App\Domain\Company\CompanyEmailAlreadyExistsException;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
 use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,11 +21,9 @@ final class CreateCompanyController extends ApiAbstractController
     public function __invoke(#[MapRequestPayload] CreateCompanyInput $input): JsonResponse
     {
         try {
-            $this->createCompany->execute(
+            $company = $this->createCompany->execute(
                 new CreateCompanyRequest(
                     name: $input->name,
-                    email: $input->email,
-                    userId: $input->userId,
                     nif: $input->nif,
                     stat: $input->stat,
                     rcs: $input->rcs,
@@ -36,12 +33,10 @@ final class CreateCompanyController extends ApiAbstractController
                     youtubeProfile: $input->youtubeProfile,
                 ),
             );
-        } catch (CompanyEmailAlreadyExistsException $e) {
-            return $this->conflict($e->getMessage());
         } catch (Exception) {
             return $this->error();
         }
 
-        return $this->created();
+        return $this->created(['id' => $company->getId(), 'slug' => $company->getSlug()]);
     }
 }

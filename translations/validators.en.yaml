@@ -13,12 +13,10 @@ company:
     name:
         not_blank: "Company name cannot be null."
         too_long: "Company name cannot be longer than {{ limit }} characters."
-    email:
-        not_blank: "Email cannot be null."
-        invalid: "Email address '{{ value }}' is not valid."
-    user_id:
-        not_blank: "User id cannot be null."
-        invalid: "User id is not a valid identifier."
+    slug:
+        not_blank: "Slug cannot be null."
+    id:
+        invalid: "Company id is not a valid identifier."
     nif:
         too_long: "NIF cannot be longer than {{ limit }} characters."
     stat:

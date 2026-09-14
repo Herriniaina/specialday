@@ -2,13 +2,11 @@
 
 namespace App\Infrastructure\Company\Entity;
 
-use App\Infrastructure\User\Entity\User;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\UniqueConstraint(name: 'uniq_company_email', columns: ['email'])]
-#[ORM\UniqueConstraint(name: 'uniq_company_token', columns: ['token'])]
+#[ORM\UniqueConstraint(name: 'uniq_company_slug', columns: ['slug'])]
 class Company
 {
     #[ORM\Id]
@@ -20,22 +18,11 @@ class Company
     private ?string $name = null;
 
     #[ORM\Column(length: 255, unique: true)]
-    #[Assert\NotBlank(message: 'company.email.not_blank')]
-    #[Assert\Email(message: 'company.email.invalid')]
-    private ?string $email = null;
+    #[Assert\NotBlank(message: 'company.slug.not_blank')]
+    private ?string $slug = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private ?\DateTimeImmutable $createdAt = null;
-
-    #[ORM\Column(length: 6)]
-    private ?string $accessCode = null;
-
-    #[ORM\Column(length: 64, unique: true)]
-    private ?string $token = null;
-
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false)]
-    private ?User $user = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $nif = null;
@@ -82,14 +69,14 @@ class Company
         return $this;
     }
 
-    public function getEmail(): ?string
+    public function getSlug(): ?string
     {
-        return $this->email;
+        return $this->slug;
     }
 
-    public function setEmail(string $email): static
+    public function setSlug(string $slug): static
     {
-        $this->email = $email;
+        $this->slug = $slug;
 
         return $this;
     }
@@ -102,42 +89,6 @@ class Company
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function getAccessCode(): ?string
-    {
-        return $this->accessCode;
-    }
-
-    public function setAccessCode(string $accessCode): static
-    {
-        $this->accessCode = $accessCode;
-
-        return $this;
-    }
-
-    public function getToken(): ?string
-    {
-        return $this->token;
-    }
-
-    public function setToken(string $token): static
-    {
-        $this->token = $token;
-
-        return $this;
-    }
-
-    public function getUser(): ?User
-    {
-        return $this->user;
-    }
-
-    public function setUser(User $user): static
-    {
-        $this->user = $user;
 
         return $this;
     }

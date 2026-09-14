@@ -11,7 +11,7 @@ framework:
             sync: 'sync://'
 
         routing:
-            App\Infrastructure\Company\Message\SendCompanyWelcomeEmail: async
+            App\Infrastructure\User\Message\SendUserEmailVerification: async
 
 when@test:
     framework:

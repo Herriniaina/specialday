@@ -12,15 +12,6 @@ readonly class CreateCompanyInput
         #[Assert\Length(max: 255, maxMessage: 'company.name.too_long')]
         public string $name = '',
 
-        #[Assert\NotBlank(message: 'company.email.not_blank')]
-        #[Assert\Email(message: 'company.email.invalid')]
-        public string $email = '',
-
-        #[SerializedName('user_id')]
-        #[Assert\NotBlank(message: 'company.user_id.not_blank')]
-        #[Assert\Uuid(message: 'company.user_id.invalid')]
-        public string $userId = '',
-
         #[Assert\Length(max: 255, maxMessage: 'company.nif.too_long')]
         public ?string $nif = null,
 

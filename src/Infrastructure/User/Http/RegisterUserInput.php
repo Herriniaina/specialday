@@ -38,6 +38,10 @@ readonly class RegisterUserInput
             message: 'user.phone.invalid',
         )]
         public string $phoneNumber = '',
+
+        #[SerializedName('company_id')]
+        #[Assert\Uuid(message: 'company.id.invalid')]
+        public ?string $companyId = null,
     ) {
     }
 }

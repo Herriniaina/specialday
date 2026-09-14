@@ -6,8 +6,6 @@ readonly class CreateCompanyRequest
 {
     public function __construct(
         public string $name,
-        public string $email,
-        public string $userId,
         public ?string $nif = null,
         public ?string $stat = null,
         public ?string $rcs = null,

@@ -3,6 +3,7 @@
 namespace App\Infrastructure\User\Entity;
 
 use App\Domain\User\UserRoleEnum;
+use App\Infrastructure\Company\Entity\Company;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Doctrine\UuidV7Generator;
 use Ramsey\Uuid\UuidInterface;
@@ -58,6 +59,16 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
     ])]
     private array $roles = [];
 
+    #[ORM\ManyToOne(targetEntity: Company::class)]
+    #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id', nullable: true)]
+    private ?Company $company = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isActive = false;
+
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $emailVerificationToken = null;
+
     public function getId(): ?UuidInterface
     {
         return $this->id;
@@ -107,6 +118,42 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
     public function setPhoneNumber(?string $phone_number): static
     {
         $this->phone_number = $phone_number;
+
+        return $this;
+    }
+
+    public function getCompany(): ?Company
+    {
+        return $this->company;
+    }
+
+    public function setCompany(?Company $company): static
+    {
+        $this->company = $company;
+
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getEmailVerificationToken(): ?string
+    {
+        return $this->emailVerificationToken;
+    }
+
+    public function setEmailVerificationToken(?string $emailVerificationToken): static
+    {
+        $this->emailVerificationToken = $emailVerificationToken;
 
         return $this;
     }

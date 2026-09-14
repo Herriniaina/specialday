@@ -13,12 +13,10 @@ company:
     name:
         not_blank: "Le nom de l'entreprise est obligatoire."
         too_long: "Le nom de l'entreprise ne peut pas dépasser {{ limit }} caractères."
-    email:
-        not_blank: "L'adresse email est obligatoire."
-        invalid: "L'adresse email '{{ value }}' n'est pas valide."
-    user_id:
-        not_blank: "L'identifiant utilisateur est obligatoire."
-        invalid: "L'identifiant utilisateur n'est pas valide."
+    slug:
+        not_blank: "Le slug est obligatoire."
+    id:
+        invalid: "L'identifiant de l'entreprise n'est pas valide."
     nif:
         too_long: "Le NIF ne peut pas dépasser {{ limit }} caractères."
     stat:

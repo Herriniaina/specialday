@@ -6,7 +6,5 @@ interface CompanyRepositoryInterface
 {
     public function save(Company $company): void;
 
-    public function existsByEmail(string $email): bool;
-
-    public function findByToken(string $token): ?Company;
+    public function existsBySlug(string $slug): bool;
 }

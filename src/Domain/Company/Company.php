@@ -7,11 +7,8 @@ class Company
     public function __construct(
         public string $id,
         public string $name,
-        public string $email,
+        public string $slug,
         public \DateTimeImmutable $createdAt,
-        public string $accessCode,
-        public string $token,
-        public string $userId,
         public ?string $nif = null,
         public ?string $stat = null,
         public ?string $rcs = null,
@@ -32,29 +29,14 @@ class Company
         return $this->name;
     }
 
-    public function getEmail(): string
+    public function getSlug(): string
     {
-        return $this->email;
+        return $this->slug;
     }
 
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
-    }
-
-    public function getAccessCode(): string
-    {
-        return $this->accessCode;
-    }
-
-    public function getToken(): string
-    {
-        return $this->token;
-    }
-
-    public function getUserId(): string
-    {
-        return $this->userId;
     }
 
     public function getNif(): ?string

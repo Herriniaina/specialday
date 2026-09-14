@@ -11,6 +11,7 @@ readonly class RegisterUserRequest
         public string $firstName,
         public string $lastName,
         public string $phoneNumber,
+        public ?string $companyId = null,
     ) {
     }
 }
