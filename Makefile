@@ -11,7 +11,7 @@ SYMFONY  = $(PHP) bin/console
 
 # Misc
 .DEFAULT_GOAL = help
-.PHONY        : help build up start down logs sh composer vendor sf cc test
+.PHONY        : help build up start down logs sh composer vendor sf cc test xdebug xdebug-off
 
 ## —— 🎵 🐳 The Symfony Docker Makefile 🐳 🎵 ——————————————————————————————————
 help: ## Outputs this help screen
@@ -41,6 +41,12 @@ bash: ## Connect to the FrankenPHP container via bash so up and down arrows go t
 test: ## Start tests with phpunit, pass the parameter "c=" to add options to phpunit, example: make test c="--group e2e --stop-on-failure"
 	@$(eval c ?=)
 	@$(DOCKER_COMP) exec -e APP_ENV=test php bin/phpunit $(c)
+
+xdebug: ## Enable Xdebug step debugging on the PHP container
+	@XDEBUG_MODE=debug $(DOCKER_COMP) up -d --no-deps php
+
+xdebug-off: ## Disable Xdebug step debugging on the PHP container
+	@$(DOCKER_COMP) up -d --no-deps php
 
 
 ## —— Composer 🧙 ——————————————————————————————————————————————————————————————

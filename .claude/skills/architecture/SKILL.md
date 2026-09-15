@@ -50,11 +50,12 @@ knows nothing about the outside.
 | Repository **port** (interface) | `src/Domain/[Ctx]/` | `App\Domain\[Ctx]` | `Domain/User/UserRepositoryInterface.php` |
 | Domain enum / exception | `src/Domain/[Ctx]/` | `App\Domain\[Ctx]` | `Domain/User/UserRoleEnum.php`, `UserNotFoundException.php` |
 | Use case (application service) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/RegisterUser.php` |
-| Request / input DTO | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/RegisterUserRequest.php` |
+| Request DTO (use case input) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/RegisterUserRequest.php` |
 | Application port (e.g. hasher, mailer) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/PasswordHasherInterface.php` |
 | Application exception | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/EmailAlreadyExistsException.php` |
 | Doctrine **entity** | `src/Infrastructure/[Ctx]/Entity/` | `App\Infrastructure\[Ctx]\Entity` | `Infrastructure/User/Entity/User.php` |
 | Repository **adapter** | `src/Infrastructure/[Ctx]/Repository/` | `App\Infrastructure\[Ctx]\Repository` | `Infrastructure/User/Repository/UserRepository.php` |
+| Input DTO (HTTP payload, validated) | `src/Infrastructure/[Ctx]/Http/` | `App\Infrastructure\[Ctx]\Http` | `Infrastructure/User/Http/RegisterUserInput.php` |
 | HTTP controller (API) | `src/Infrastructure/[Ctx]/Http/` | `App\Infrastructure\[Ctx]\Http` | `Infrastructure/User/Http/RegisterUserController.php` |
 | Security adapter | `src/Infrastructure/[Ctx]/Security/` | `App\Infrastructure\[Ctx]\Security` | `Infrastructure/User/Security/SymfonyPasswordHasher.php` |
 | Shared HTTP base / listeners | `src/Infrastructure/Shared/Http/` | `App\Infrastructure\Shared\Http` | `ApiAbstractController.php`, `EventListeners/…` |
@@ -147,10 +148,12 @@ class CreateBooking
 }
 ```
 
-### Request / input DTO
+### Request DTO
 
-`readonly` class, promoted properties, plus a `fromArray()` factory that maps the
-snake_case JSON payload and supplies defaults.
+`readonly` class, promoted properties only. No factory method, no defaults logic,
+**no framework attributes** — the HTTP boundary (the Input DTO, below) is
+responsible for parsing and validating; by the time a use case sees a Request it
+is already trusted data.
 
 ```php
 <?php
@@ -161,26 +164,10 @@ readonly class CreateBookingRequest
 {
     public function __construct(
         public string $reference,
-        public string $date,
+        public \DateTimeImmutable $date,
     ) {}
-
-    public static function fromArray(array $payload): self
-    {
-        return new self(
-            reference: $payload['reference'] ?? '',
-            date: $payload['date'] ?? '',
-        );
-    }
 }
 ```
-
-> **Validation note.** The intended rule is that Application code is framework-free.
-> The existing `RegisterUserRequest` currently carries
-> `Symfony\Component\Validator\Constraints` attributes — treat that as a legacy
-> deviation, not the pattern to copy. Prefer keeping DTOs annotation-free and
-> running validation at the HTTP boundary (controller / Doctrine entity). If you
-> must match the existing style for consistency in the `User` context, keep it
-> confined to the DTO and never let it leak into a use case class.
 
 ---
 
@@ -266,13 +253,46 @@ class BookingRepository implements BookingRepositoryInterface
 **Skeleton style — `extends ServiceEntityRepository`** (as in `CategoryRepository`):
 only for contexts with **no domain port**, typically admin/CRUD-only entities.
 
+### Input DTO — `Infrastructure/[Ctx]/Http/`
+
+One `readonly` class per endpoint, resolved by Symfony's
+`#[MapRequestPayload]` (handles JSON parsing, deserialization **and**
+validation before the controller body runs — no manual `try`/`catch` for JSON,
+no manual `ValidatorInterface` call). This is the **only** place request-shape
+validation lives: `Symfony\Component\Validator\Constraints` attributes and
+`#[SerializedName]` for snake_case → camelCase mapping. Give every property a
+default so a missing field fails validation instead of throwing during
+deserialization.
+
+```php
+<?php
+
+namespace App\Infrastructure\Booking\Http;
+
+use Symfony\Component\Serializer\Attribute\SerializedName;
+use Symfony\Component\Validator\Constraints as Assert;
+
+readonly class CreateBookingInput
+{
+    public function __construct(
+        #[Assert\NotBlank(message: 'booking.reference.not_blank')]
+        public string $reference = '',
+
+        #[SerializedName('date')]
+        #[Assert\NotBlank(message: 'booking.date.not_blank')]
+        public string $date = '',
+    ) {
+    }
+}
+```
+
 ### HTTP controller (API) — `Infrastructure/[Ctx]/Http/`
 
 `final` single-action `__invoke` controller, `extends ApiAbstractController`
 (`src/Infrastructure/Shared/Http/ApiAbstractController.php` — gives `success()`,
 `created()`, `badRequest()`, `notFound()`, `conflict()`, `error()`). Flow:
-parse body → build Request DTO → validate → call use case → map exceptions to
-responses.
+Symfony resolves + validates the Input DTO → controller maps it field-by-field
+into a Request DTO → call use case → map exceptions to responses.
 
 ```php
 <?php
@@ -284,38 +304,24 @@ use App\Application\Booking\CreateBooking;
 use App\Application\Booking\CreateBookingRequest;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
 use Exception;
-use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class CreateBookingController extends ApiAbstractController
 {
     public function __construct(
         private CreateBooking $createBooking,
-        private ValidatorInterface $validator,
     ) {}
 
     #[Route('/api/booking', name: 'app_booking_create', methods: ['POST'])]
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(#[MapRequestPayload] CreateBookingInput $input): JsonResponse
     {
         try {
-            $dto = CreateBookingRequest::fromArray($request->toArray());
-
-            $violations = $this->validator->validate($dto);
-            if (count($violations) > 0) {
-                $errors = [];
-                foreach ($violations as $v) {
-                    $errors[$v->getPropertyPath()] = $v->getMessage();
-                }
-
-                return $this->badRequest('Invalid parameter', $errors);
-            }
-
-            $this->createBooking->execute($dto);
-        } catch (JsonException) {
-            return $this->badRequest('Invalid json format.');
+            $this->createBooking->execute(new CreateBookingRequest(
+                reference: $input->reference,
+                date: new \DateTimeImmutable($input->date),
+            ));
         } catch (BookingAlreadyExistsException $e) {
             return $this->conflict($e->getMessage());
         } catch (Exception) {
@@ -327,8 +333,11 @@ final class CreateBookingController extends ApiAbstractController
 }
 ```
 
-Routes are attribute-based and auto-imported (`config/routes.yaml` →
-`routing.controllers`). No YAML route entry needed.
+`#[MapRequestPayload]` already returns a 422 with violation details when the
+Input DTO fails validation, so the controller body only runs on valid input —
+no manual violation-collecting loop needed. Routes are attribute-based and
+auto-imported (`config/routes.yaml` → `routing.controllers`). No YAML route
+entry needed.
 
 ### EasyAdmin CRUD — `Infrastructure/Admin/Http/`
 
@@ -366,7 +375,10 @@ entity** FQCN, fields configured in `configureFields()`. Register it in
 
 - Use case: imperative verb + subject — `RegisterUser`, `CreateBooking`. Entry
   method `execute()`.
-- Request DTO: `<UseCase>Request` with static `fromArray(array): self`.
+- Request DTO: `<UseCase>Request`, plain `readonly` data holder, no factory
+  method, no framework attributes.
+- Input DTO: `<UseCase>Input`, `readonly`, carries the Validator constraints and
+  `#[SerializedName]` mapping, resolved via `#[MapRequestPayload]`.
 - Port interface: `<Thing>RepositoryInterface`, `<Capability>Interface`
   (`PasswordHasherInterface`).
 - Controller: `<Action><Ctx>Controller`, `final`, single `__invoke`.
