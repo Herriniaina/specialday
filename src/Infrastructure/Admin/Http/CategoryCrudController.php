@@ -5,10 +5,12 @@ namespace App\Infrastructure\Admin\Http;
 use App\Infrastructure\Category\Entity\Category;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
+/**
+ * @extends AbstractCrudController<Category>
+ */
 class CategoryCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string

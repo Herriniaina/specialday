@@ -2,10 +2,10 @@
 
 namespace App\Application\Company;
 
-use App\Domain\Company\Company;
-use App\Domain\Company\CompanyRepositoryInterface;
 use App\Application\Shared\IdGeneratorInterface;
 use App\Application\Shared\SlugGeneratorInterface;
+use App\Domain\Company\Company;
+use App\Domain\Company\CompanyRepositoryInterface;
 
 class CreateCompany
 {
@@ -45,7 +45,7 @@ class CreateCompany
 
         while ($this->companyRepository->existsBySlug($slug)) {
             $slug = \sprintf('%s-%d', $baseSlug, $suffix);
-            $suffix++;
+            ++$suffix;
         }
 
         return $slug;

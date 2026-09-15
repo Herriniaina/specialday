@@ -2,7 +2,8 @@
 
 namespace App\Domain\User;
 
-interface UserRepositoryInterface {
+interface UserRepositoryInterface
+{
     public function save(User $user): void;
 
     public function existsByEmail(string $email): bool;

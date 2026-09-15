@@ -6,7 +6,6 @@ use App\Application\User\EmailAlreadyExistsException;
 use App\Application\User\RegisterUser;
 use App\Application\User\RegisterUserRequest;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,7 +32,7 @@ final class RegisterUserController extends ApiAbstractController
             ));
         } catch (EmailAlreadyExistsException $e) {
             return $this->conflict($e->getMessage());
-        } catch (Exception) {
+        } catch (\Exception) {
             return $this->error();
         }
 

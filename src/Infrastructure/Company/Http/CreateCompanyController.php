@@ -5,7 +5,6 @@ namespace App\Infrastructure\Company\Http;
 use App\Application\Company\CreateCompany;
 use App\Application\Company\CreateCompanyRequest;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,7 +32,7 @@ final class CreateCompanyController extends ApiAbstractController
                     youtubeProfile: $input->youtubeProfile,
                 ),
             );
-        } catch (Exception) {
+        } catch (\Exception) {
             return $this->error();
         }
 

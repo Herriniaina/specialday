@@ -24,7 +24,7 @@ class SubscriptionPlan
 
     public function __toString(): string
     {
-        return $this->plan !== null ? ucfirst($this->plan->value) : '';
+        return null !== $this->plan ? ucfirst($this->plan->value) : '';
     }
 
     public function getId(): ?UuidInterface

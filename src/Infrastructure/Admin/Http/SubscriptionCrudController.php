@@ -10,6 +10,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 
+/**
+ * @extends AbstractCrudController<Subscription>
+ */
 class SubscriptionCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string

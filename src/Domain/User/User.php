@@ -4,6 +4,9 @@ namespace App\Domain\User;
 
 class User
 {
+    /**
+     * @param string[] $roles
+     */
     public function __construct(
         public string $email,
         public string $password,
@@ -48,6 +51,9 @@ class User
         return $this->companyId;
     }
 
+    /**
+     * @return string[]
+     */
     public function getRoles(): array
     {
         return $this->roles;

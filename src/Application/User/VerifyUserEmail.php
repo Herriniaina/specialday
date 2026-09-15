@@ -14,10 +14,15 @@ class VerifyUserEmail
     public function execute(VerifyUserEmailRequest $request): void
     {
         $user = $this->userRepository->findByEmailVerificationToken($request->token);
-        if ($user === null) {
+        if (null === $user) {
             throw new InvalidEmailVerificationTokenException('Invalid or expired verification token.');
         }
 
-        $this->userRepository->activate($user->getId());
+        $userId = $user->getId();
+        if (null === $userId) {
+            throw new UserIdentifierMissingException('#ID cannot be null.');
+        }
+
+        $this->userRepository->activate($userId);
     }
 }

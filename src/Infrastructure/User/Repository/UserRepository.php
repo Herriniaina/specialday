@@ -6,10 +6,9 @@ use App\Domain\User\User;
 use App\Domain\User\UserRepositoryInterface;
 use App\Infrastructure\Company\Entity\Company as CompanyEntity;
 use App\Infrastructure\User\Entity\User as EntityUser;
-use Doctrine\ORM\EntityManagerInterface;
-use Override;
-use Ramsey\Uuid\Uuid;
 use App\Infrastructure\User\Entity\User as UserEntity;
+use Doctrine\ORM\EntityManagerInterface;
+use Ramsey\Uuid\Uuid;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -17,7 +16,7 @@ class UserRepository implements UserRepositoryInterface
     {
     }
 
-    #[Override]
+    #[\Override]
     public function save(User $user): void
     {
         $entityUser = new EntityUser();
@@ -30,7 +29,7 @@ class UserRepository implements UserRepositoryInterface
         $entityUser->setIsActive($user->isActive);
         $entityUser->setEmailVerificationToken($user->emailVerificationToken);
 
-        if ($user->companyId !== null) {
+        if (null !== $user->companyId) {
             $entityUser->setCompany($this->em->getReference(CompanyEntity::class, $user->companyId));
         }
 
@@ -38,34 +37,34 @@ class UserRepository implements UserRepositoryInterface
         $this->em->flush();
     }
 
-    #[Override]
+    #[\Override]
     public function existsByEmail(string $email): bool
     {
-        return $this->em->getRepository(UserEntity::class)->findOneBy(['email' => $email]) !== null;
+        return null !== $this->em->getRepository(UserEntity::class)->findOneBy(['email' => $email]);
     }
 
-    #[Override]
+    #[\Override]
     public function findById(string $id): ?User
     {
         $entity = $this->em->find(UserEntity::class, Uuid::fromString($id));
 
-        return $entity === null ? null : $this->toDomain($entity);
+        return null === $entity ? null : $this->toDomain($entity);
     }
 
-    #[Override]
+    #[\Override]
     public function findByEmailVerificationToken(string $token): ?User
     {
         $entity = $this->em->getRepository(UserEntity::class)
             ->findOneBy(['emailVerificationToken' => $token]);
 
-        return $entity === null ? null : $this->toDomain($entity);
+        return null === $entity ? null : $this->toDomain($entity);
     }
 
-    #[Override]
+    #[\Override]
     public function activate(string $userId): void
     {
         $entity = $this->em->find(UserEntity::class, Uuid::fromString($userId));
-        if ($entity === null) {
+        if (null === $entity) {
             return;
         }
 

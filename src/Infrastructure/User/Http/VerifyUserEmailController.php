@@ -6,7 +6,6 @@ use App\Application\User\InvalidEmailVerificationTokenException;
 use App\Application\User\VerifyUserEmail;
 use App\Application\User\VerifyUserEmailRequest;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use Exception;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -24,7 +23,7 @@ final class VerifyUserEmailController extends ApiAbstractController
             $this->verifyUserEmail->execute(new VerifyUserEmailRequest($token));
         } catch (InvalidEmailVerificationTokenException $e) {
             return $this->badRequest($e->getMessage());
-        } catch (Exception) {
+        } catch (\Exception) {
             return $this->error();
         }
 

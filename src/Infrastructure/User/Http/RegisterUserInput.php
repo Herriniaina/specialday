@@ -7,6 +7,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class RegisterUserInput
 {
+    /**
+     * @param string[] $roles
+     */
     public function __construct(
         #[Assert\NotBlank(message: 'user.email.not_blank')]
         #[Assert\Email(message: 'user.email.invalid')]

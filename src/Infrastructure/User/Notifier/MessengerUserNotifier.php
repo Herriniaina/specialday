@@ -5,7 +5,6 @@ namespace App\Infrastructure\User\Notifier;
 use App\Application\User\UserNotifierInterface;
 use App\Domain\User\User;
 use App\Infrastructure\User\Message\SendUserEmailVerification;
-use Override;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 class MessengerUserNotifier implements UserNotifierInterface
@@ -14,7 +13,7 @@ class MessengerUserNotifier implements UserNotifierInterface
     {
     }
 
-    #[Override]
+    #[\Override]
     public function emailVerificationRequested(User $user, string $verificationToken): void
     {
         $this->bus->dispatch(new SendUserEmailVerification(

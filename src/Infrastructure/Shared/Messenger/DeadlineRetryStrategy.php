@@ -2,11 +2,9 @@
 
 namespace App\Infrastructure\Shared\Messenger;
 
-use Override;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Retry\RetryStrategyInterface;
 use Symfony\Component\Messenger\Stamp\RedeliveryStamp;
-
 
 final class DeadlineRetryStrategy implements RetryStrategyInterface
 {
@@ -14,13 +12,13 @@ final class DeadlineRetryStrategy implements RetryStrategyInterface
     {
     }
 
-    #[Override]
+    #[\Override]
     public function isRetryable(Envelope $message, ?\Throwable $throwable = null): bool
     {
         return $this->scheduledDelayAfter($this->retryCount($message)) < $this->retryWindowSeconds;
     }
 
-    #[Override]
+    #[\Override]
     public function getWaitingTime(Envelope $message, ?\Throwable $throwable = null): int
     {
         $attempt = $this->retryCount($message) + 1;

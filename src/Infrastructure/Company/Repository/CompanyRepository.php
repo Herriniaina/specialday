@@ -6,7 +6,6 @@ use App\Domain\Company\Company;
 use App\Domain\Company\CompanyRepositoryInterface;
 use App\Infrastructure\Company\Entity\Company as CompanyEntity;
 use Doctrine\ORM\EntityManagerInterface;
-use Override;
 
 class CompanyRepository implements CompanyRepositoryInterface
 {
@@ -14,7 +13,7 @@ class CompanyRepository implements CompanyRepositoryInterface
     {
     }
 
-    #[Override]
+    #[\Override]
     public function save(Company $company): void
     {
         $entity = ($this->em->find(CompanyEntity::class, $company->id) ?? new CompanyEntity())
@@ -34,12 +33,12 @@ class CompanyRepository implements CompanyRepositoryInterface
         $this->em->flush();
     }
 
-    #[Override]
+    #[\Override]
     public function existsBySlug(string $slug): bool
     {
-        return $this->em->getRepository(CompanyEntity::class)
+        return null !== $this->em->getRepository(CompanyEntity::class)
             ->findOneBy([
-                'slug' => $slug
-            ]) !== null;
+                'slug' => $slug,
+            ]);
     }
 }

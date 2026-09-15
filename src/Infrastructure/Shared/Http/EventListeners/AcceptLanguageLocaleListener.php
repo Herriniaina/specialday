@@ -2,12 +2,13 @@
 
 namespace App\Infrastructure\Shared\Http\EventListeners;
 
-use Symfony\Component\HttpKernel\EventListener\LocaleListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\EventListener\LocaleListener;
 
 class AcceptLanguageLocaleListener extends LocaleListener
 {
-    private array $supportedLocales = ['fr', 'en', 'es']; // À adapter ou injecter
+    /** @var string[] */
+    private array $supportedLocales = ['fr', 'en', 'es'];
 
     public function onKernelRequest(RequestEvent $event): void
     {
@@ -15,7 +16,7 @@ class AcceptLanguageLocaleListener extends LocaleListener
 
         if (!$request->attributes->get('_locale')) {
             $preferredLanguage = $request->getPreferredLanguage($this->supportedLocales);
-            
+
             if ($preferredLanguage) {
                 $request->setLocale($preferredLanguage);
             }

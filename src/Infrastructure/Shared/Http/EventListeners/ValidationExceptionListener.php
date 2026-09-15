@@ -38,6 +38,9 @@ final class ValidationExceptionListener
         }
     }
 
+    /**
+     * @param array<string, string> $payload
+     */
     private function envelope(string $statusText, array $payload = []): JsonResponse
     {
         $body = [
@@ -45,7 +48,7 @@ final class ValidationExceptionListener
             'statusText' => $statusText,
         ];
 
-        if ($payload !== []) {
+        if ([] !== $payload) {
             $body['payload'] = $payload;
         }
 
