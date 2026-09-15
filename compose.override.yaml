@@ -47,6 +47,8 @@ services:
     healthcheck:
       disable: true
     depends_on:
+      php:
+        condition: service_healthy
       redis:
         condition: service_healthy
       database:
