@@ -17,11 +17,16 @@
         "ramsey/uuid": "^4.9",
         "ramsey/uuid-doctrine": "^2.1",
         "symfony/console": "8.1.*",
+        "symfony/doctrine-messenger": "8.1.*",
         "symfony/dotenv": "8.1.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "8.1.*",
+        "symfony/mailer": "8.1.*",
+        "symfony/messenger": "8.1.*",
+        "symfony/redis-messenger": "8.1.*",
         "symfony/runtime": "8.1.*",
         "symfony/security-bundle": "8.1.*",
+        "symfony/serializer": "8.1.*",
         "symfony/translation": "8.1.*",
         "symfony/validator": "8.1.*",
         "symfony/yaml": "8.1.*"
@@ -80,6 +85,15 @@
         }
     },
     "require-dev": {
-        "symfony/maker-bundle": "^1.67"
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpstan/phpstan-symfony": "^2.0",
+        "phpunit/phpunit": "^13.3",
+        "symfony/browser-kit": "8.1.*",
+        "symfony/css-selector": "8.1.*",
+        "symfony/maker-bundle": "^1.67",
+        "symfony/stopwatch": "8.1.*",
+        "symfony/web-profiler-bundle": "8.1.*"
     }
 }

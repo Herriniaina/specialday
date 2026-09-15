@@ -14,7 +14,7 @@ abstract class ApiAbstractController
             'statusText' => $statusText,
         ];
 
-        if ($payload !== null) {
+        if (null !== $payload) {
             $response['payload'] = $payload;
         }
 
@@ -31,6 +31,9 @@ abstract class ApiAbstractController
         return $this->jsonResponse(Response::HTTP_CREATED, $statusText, $payload);
     }
 
+    /**
+     * @param mixed[] $payload
+     */
     protected function badRequest(string $statusText = 'Invalid parameter', array $payload = []): JsonResponse
     {
         return $this->jsonResponse(Response::HTTP_BAD_REQUEST, $statusText, $payload);

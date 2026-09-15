@@ -4,29 +4,38 @@ namespace App\Application\User;
 
 use App\Domain\User\User;
 use App\Domain\User\UserRepositoryInterface;
-use App\Application\User\PasswordHasherInterface;
 
-class RegisterUser {
+class RegisterUser
+{
     public function __construct(
         public UserRepositoryInterface $userRepository,
         private PasswordHasherInterface $passwordHasher,
-    ) {}
+        private UserNotifierInterface $notifier,
+    ) {
+    }
 
     public function execute(
-        RegisterUserRequest $registerUserRequest
+        RegisterUserRequest $registerUserRequest,
     ): void {
-        if ($this->userRepository->existsByEmail($registerUserRequest->email)) throw new EmailAlreadyExistsException("Email already exist.");
+        if ($this->userRepository->existsByEmail($registerUserRequest->email)) {
+            throw new EmailAlreadyExistsException('Email already exist.');
+        }
+
+        $verificationToken = bin2hex(random_bytes(32));
 
         $user = new User(
-            $registerUserRequest->email,
-            $registerUserRequest->password,
-            $registerUserRequest->roles,
-            $registerUserRequest->firstName,
-            $registerUserRequest->lastName,
-            $registerUserRequest->phoneNumber
+            email: $registerUserRequest->email,
+            password: $this->passwordHasher->hash($registerUserRequest->password),
+            roles: $registerUserRequest->roles,
+            firstName: $registerUserRequest->firstName,
+            lastName: $registerUserRequest->lastName,
+            phoneNumber: $registerUserRequest->phoneNumber,
+            companyId: $registerUserRequest->companyId,
+            isActive: false,
+            emailVerificationToken: $verificationToken,
         );
 
-        $user->password = $this->passwordHasher->hash($user->password);
         $this->userRepository->save($user);
+        $this->notifier->emailVerificationRequested($user, $verificationToken);
     }
 }

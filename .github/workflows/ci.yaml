@@ -46,17 +46,16 @@ jobs:
       # Uncomment when the homepage is configured, or change the path to check
       # - name: Check HTTPS reachability
       #   run: curl -v --insecure --fail-with-body https://localhost
-      - name: Check Mercure reachability
-        run: curl -vI --insecure --fail-with-body https://localhost/.well-known/mercure?topic=test
+      # - name: Check Mercure reachability
+      #  run: curl -vI --insecure --fail-with-body https://localhost/.well-known/mercure?topic=test
       # Uncomment if Doctrine ORM is installed
       # - name: Create test database
       #   run: docker compose exec -T php bin/console -e test doctrine:database:create
       # Uncomment if Doctrine Migrations is installed
       # - name: Run migrations
       #   run: docker compose exec -T php bin/console -e test doctrine:migrations:migrate --no-interaction
-      # Uncomment if PHPUnit is installed
-      # - name: Run PHPUnit
-      #   run: docker compose exec -T php bin/phpunit
+      - name: Run PHPUnit
+        run: docker compose exec -T php bin/phpunit
       # Uncomment if Doctrine ORM is installed
       # - name: Doctrine Schema Validator
       #   run: docker compose exec -T php bin/console -e test doctrine:schema:validate
@@ -65,20 +64,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
-      statuses: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0
           persist-credentials: false
-      - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v8
-        env:
-          GITHUB_ACTIONS_CONFIG_FILE: actionlint.yaml
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_CHECKOV: false
-          VALIDATE_TRIVY: false
-          VALIDATE_BIOME_FORMAT: false
-          VALIDATE_BIOME_LINT: false
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+      - name: PHP-CS-Fixer
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress

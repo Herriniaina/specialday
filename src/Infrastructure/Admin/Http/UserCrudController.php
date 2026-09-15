@@ -8,6 +8,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
+/**
+ * @extends AbstractCrudController<User>
+ */
 class UserCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string
@@ -25,22 +28,31 @@ class UserCrudController extends AbstractCrudController
             TextField::new('password', 'Mot de passe')
                 ->onlyOnForms()
                 ->setFormTypeOptions([
-                    'required' => $pageName === Crud::PAGE_NEW,
+                    'required' => Crud::PAGE_NEW === $pageName,
                 ]),
         ];
 
-            if ($pageName === Crud::PAGE_EDIT) {
-                array_splice($fields, 1, 0, [
-                    ChoiceField::new('role', 'Rôle')
-                        ->setChoices([
-                            'Admin' => 'ROLE_ADMIN',
-                            'Prestataire' => 'ROLE_COMPANY_ADMIN',
-                            'Utilisateur' => 'ROLE_USER',
-                        ])
-                        ->setFormTypeOptions(['required' => true]),
-                ]);
-            }
+        if (Crud::PAGE_EDIT === $pageName) {
+            array_splice($fields, 1, 0, [
+                ChoiceField::new('role', 'Rôle')
+                    ->setChoices([
+                        'Admin' => 'ROLE_ADMIN',
+                        'Prestataire' => 'ROLE_COMPANY_ADMIN',
+                        'Utilisateur' => 'ROLE_USER',
+                    ])
+                    ->setFormTypeOptions(['required' => true]),
+            ]);
+        }
 
         return $fields;
+    }
+
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setPageTitle(Crud::PAGE_INDEX, 'Liste des utilisateurs')
+            ->setPageTitle(Crud::PAGE_NEW, 'Ajouter un utilisateur')
+            ->setPageTitle(Crud::PAGE_EDIT, 'Modifier l\'utilisateur')
+        ;
     }
 }

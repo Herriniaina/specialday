@@ -3,6 +3,8 @@
 namespace App\Infrastructure\User\Entity;
 
 use App\Domain\User\UserRoleEnum;
+use App\Infrastructure\Company\Entity\Company;
+use App\Infrastructure\User\UserEmailMissingException;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Doctrine\UuidV7Generator;
 use Ramsey\Uuid\UuidInterface;
@@ -11,10 +13,9 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-
 #[ORM\Entity]
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
-class User  implements PasswordAuthenticatedUserInterface, UserInterface
+class User implements PasswordAuthenticatedUserInterface, UserInterface
 {
     public const ROLE_USER = 'ROLE_USER';
 
@@ -47,6 +48,7 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
     #[Assert\Length(min: 8, minMessage: 'user.password.too_short')]
     private ?string $password = null;
 
+    /** @var string[] */
     #[ORM\Column(type: 'json')]
     #[Assert\NotNull]
     #[Assert\All([
@@ -57,6 +59,16 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
         ),
     ])]
     private array $roles = [];
+
+    #[ORM\ManyToOne(targetEntity: Company::class)]
+    #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id', nullable: true)]
+    private ?Company $company = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isActive = false;
+
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $emailVerificationToken = null;
 
     public function getId(): ?UuidInterface
     {
@@ -111,6 +123,42 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
         return $this;
     }
 
+    public function getCompany(): ?Company
+    {
+        return $this->company;
+    }
+
+    public function setCompany(?Company $company): static
+    {
+        $this->company = $company;
+
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getEmailVerificationToken(): ?string
+    {
+        return $this->emailVerificationToken;
+    }
+
+    public function setEmailVerificationToken(?string $emailVerificationToken): static
+    {
+        $this->emailVerificationToken = $emailVerificationToken;
+
+        return $this;
+    }
+
     public function getPassword(): ?string
     {
         return $this->password;
@@ -125,7 +173,11 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
 
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        if (null === $this->email || '' === $this->email) {
+            throw new UserEmailMissingException('Cannot compute the user identifier: email is not set.');
+        }
+
+        return $this->email;
     }
 
     public function getRoles(): array
@@ -152,23 +204,23 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
     {
     }
 
+    /**
+     * @param string[] $roles
+     */
     public function setRoles(array $roles): static
     {
         $rolesToCheck = array_diff($roles, [self::ROLE_USER]);
 
         foreach ($rolesToCheck as $role) {
-            if (UserRoleEnum::tryFrom($role) === null) {
-                throw new \InvalidArgumentException(sprintf(
-                    'Role "%s" is not valid.',
-                    $role
-                ));
+            if (null === UserRoleEnum::tryFrom($role)) {
+                throw new \InvalidArgumentException(sprintf('Role "%s" is not valid.', $role));
             }
         }
 
-        if ($this->isNewUser() &&
-        !in_array(UserRoleEnum::COMPANY_ADMIN->value,$rolesToCheck) &&
-        !empty($rolesToCheck)) {
-            throw new BadRequestException("Role cannot be set.");
+        if ($this->isNewUser()
+        && !in_array(UserRoleEnum::COMPANY_ADMIN->value, $rolesToCheck)
+        && !empty($rolesToCheck)) {
+            throw new BadRequestException('Role cannot be set.');
         }
 
         $this->roles = $rolesToCheck;
@@ -178,6 +230,6 @@ class User  implements PasswordAuthenticatedUserInterface, UserInterface
 
     private function isNewUser(): bool
     {
-        return $this->id === null;
+        return null === $this->id;
     }
 }

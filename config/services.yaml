@@ -30,3 +30,24 @@ services:
 
     App\Application\User\PasswordHasherInterface:
         alias: App\Infrastructure\User\Security\SymfonyPasswordHasher
+
+    App\Domain\Company\CompanyRepositoryInterface:
+        alias: App\Infrastructure\Company\Repository\CompanyRepository
+
+    App\Application\User\UserNotifierInterface:
+        alias: App\Infrastructure\User\Notifier\MessengerUserNotifier
+
+    App\Application\Shared\IdGeneratorInterface:
+        alias: App\Infrastructure\Shared\Identity\UuidV7IdGenerator
+
+    App\Application\Shared\SlugGeneratorInterface:
+        alias: App\Infrastructure\Shared\Slug\SymfonySlugGenerator
+
+    App\Infrastructure\User\MessageHandler\SendUserEmailVerificationHandler:
+        arguments:
+            $appBaseUrl: '%env(DEFAULT_URI)%'
+            $mailerFrom: '%env(MAILER_FROM)%'
+
+    App\Infrastructure\Shared\Messenger\DeadlineRetryStrategy:
+        arguments:
+            $retryWindowSeconds: 3600

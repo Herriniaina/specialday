@@ -9,3 +9,25 @@ user:
         invalid: "Le rôle '{{ value }}' n'existe pas."
     phone:
         invalid: "Le numéro de tél. n'est pas valide."
+company:
+    name:
+        not_blank: "Le nom de l'entreprise est obligatoire."
+        too_long: "Le nom de l'entreprise ne peut pas dépasser {{ limit }} caractères."
+    slug:
+        not_blank: "Le slug est obligatoire."
+    id:
+        invalid: "L'identifiant de l'entreprise n'est pas valide."
+    nif:
+        too_long: "Le NIF ne peut pas dépasser {{ limit }} caractères."
+    stat:
+        too_long: "Le STAT ne peut pas dépasser {{ limit }} caractères."
+    rcs:
+        too_long: "Le RCS ne peut pas dépasser {{ limit }} caractères."
+    phone:
+        too_long: "Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères."
+    instagram_profile:
+        too_long: "Le profil Instagram ne peut pas dépasser {{ limit }} caractères."
+    facebook_profile:
+        too_long: "Le profil Facebook ne peut pas dépasser {{ limit }} caractères."
+    youtube_profile:
+        too_long: "Le profil Youtube ne peut pas dépasser {{ limit }} caractères."

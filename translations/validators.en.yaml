@@ -9,3 +9,25 @@ user:
         invalid: "Role '{{ value }}' doesn't exist."
     phone:
         invalid: "Phone number is not valid."
+company:
+    name:
+        not_blank: "Company name cannot be null."
+        too_long: "Company name cannot be longer than {{ limit }} characters."
+    slug:
+        not_blank: "Slug cannot be null."
+    id:
+        invalid: "Company id is not a valid identifier."
+    nif:
+        too_long: "NIF cannot be longer than {{ limit }} characters."
+    stat:
+        too_long: "STAT cannot be longer than {{ limit }} characters."
+    rcs:
+        too_long: "RCS cannot be longer than {{ limit }} characters."
+    phone:
+        too_long: "Phone number cannot be longer than {{ limit }} characters."
+    instagram_profile:
+        too_long: "Instagram profile cannot be longer than {{ limit }} characters."
+    facebook_profile:
+        too_long: "Facebook profile cannot be longer than {{ limit }} characters."
+    youtube_profile:
+        too_long: "Youtube profile cannot be longer than {{ limit }} characters."
