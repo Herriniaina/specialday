@@ -45,7 +45,11 @@ services:
       target: frankenphp_dev
     restart: unless-stopped
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "pidof php || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     depends_on:
       php:
         condition: service_healthy
