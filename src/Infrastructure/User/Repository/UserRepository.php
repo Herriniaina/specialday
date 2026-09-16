@@ -73,6 +73,18 @@ class UserRepository implements UserRepositoryInterface
         $this->em->flush();
     }
 
+    #[\Override]
+    public function updatePassword(string $userId, string $hashedPassword): void
+    {
+        $entity = $this->em->find(UserEntity::class, Uuid::fromString($userId));
+        if (null === $entity) {
+            return;
+        }
+
+        $entity->setPassword($hashedPassword);
+        $this->em->flush();
+    }
+
     private function toDomain(UserEntity $entity): User
     {
         return new User(

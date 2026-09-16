@@ -13,4 +13,6 @@ interface UserRepositoryInterface
     public function findByEmailVerificationToken(string $token): ?User;
 
     public function activate(string $userId): void;
+
+    public function updatePassword(string $userId, string $hashedPassword): void;
 }
