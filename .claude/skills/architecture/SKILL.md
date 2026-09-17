@@ -381,6 +381,11 @@ entity** FQCN, fields configured in `configureFields()`. Register it in
   `#[SerializedName]` mapping, resolved via `#[MapRequestPayload]`.
 - Port interface: `<Thing>RepositoryInterface`, `<Capability>Interface`
   (`PasswordHasherInterface`).
+- Constructor-injected `<Thing>RepositoryInterface $x`: name `$x` after the
+  interface with the `Interface` suffix dropped and lower-camelCased —
+  `CompanyRepositoryInterface $companyRepository`,
+  `SubscriptionRepositoryInterface $subscriptionRepository`. Never abbreviate
+  or pluralize it (not `$companies`, not `$subscriptions`).
 - Controller: `<Action><Ctx>Controller`, `final`, single `__invoke`.
 - Doctrine entity vs domain model share a short name; alias on import
   (`use App\Infrastructure\User\Entity\User as UserEntity;`).
