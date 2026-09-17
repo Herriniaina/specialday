@@ -10,4 +10,6 @@ interface MediaFileRepositoryInterface
      * @return MediaFile[]
      */
     public function findByCompanyId(string $companyId): array;
+
+    public function findById(string $id): ?MediaFile;
 }

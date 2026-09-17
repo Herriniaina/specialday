@@ -36,4 +36,10 @@ class FlysystemFileStorage implements FileStorageInterface
     {
         $this->storage->delete($destinationPath);
     }
+
+    #[\Override]
+    public function readStream(string $path): mixed
+    {
+        return $this->storage->readStream($path);
+    }
 }

@@ -9,11 +9,13 @@ use App\Domain\Media\MediaFile;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final class ListCompanyMediaFilesController extends ApiAbstractController
 {
     public function __construct(
         private ListCompanyMediaFiles $listCompanyMediaFiles,
+        private UrlGeneratorInterface $urlGenerator,
     ) {
     }
 
@@ -29,13 +31,12 @@ final class ListCompanyMediaFilesController extends ApiAbstractController
         }
 
         return $this->success(array_map(
-            static fn (MediaFile $mediaFile): array => [
+            fn (MediaFile $mediaFile): array => [
                 'id' => $mediaFile->getId(),
                 'company_id' => $mediaFile->companyId,
                 'filename' => $mediaFile->filename,
-                // The S3 path stays internal: the public detail route (/api/public/media/{mediaId}, not built yet)
-                // will be the only thing that resolves it to an actual file.
-                'url' => \sprintf('/api/public/media/%s', $mediaFile->getId()),
+                // The S3 path stays internal: only GetMediaFileController resolves it to actual bytes.
+                'url' => $this->urlGenerator->generate('app_public_media_get', ['mediaId' => $mediaFile->getId()]),
             ],
             $mediaFiles,
         ));

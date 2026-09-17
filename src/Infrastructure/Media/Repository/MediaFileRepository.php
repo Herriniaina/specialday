@@ -68,6 +68,14 @@ class MediaFileRepository implements MediaFileRepositoryInterface
         return array_map($this->toDomain(...), $entities);
     }
 
+    #[\Override]
+    public function findById(string $id): ?MediaFile
+    {
+        $entity = $this->em->getRepository(MediaFileEntity::class)->findOneBy(['id' => $id, 'deletedAt' => null]);
+
+        return null === $entity ? null : $this->toDomain($entity);
+    }
+
     private function toDomain(MediaFileEntity $entity): MediaFile
     {
         $company = $entity->getCompany();
