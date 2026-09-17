@@ -4,6 +4,7 @@ namespace App\Infrastructure\Media\Repository;
 
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\StorageProviderEnum;
 use App\Infrastructure\Company\Entity\Company as CompanyEntity;
 use App\Infrastructure\Media\Entity\MediaFile as MediaFileEntity;
 use App\Infrastructure\User\Entity\User as UserEntity;
@@ -54,5 +55,39 @@ class MediaFileRepository implements MediaFileRepositoryInterface
 
         $this->em->persist($entity);
         $this->em->flush();
+    }
+
+    #[\Override]
+    public function findByCompanyId(string $companyId): array
+    {
+        $entities = $this->em->getRepository(MediaFileEntity::class)->findBy(
+            ['company' => $companyId, 'deletedAt' => null],
+            ['createdAt' => 'DESC'],
+        );
+
+        return array_map($this->toDomain(...), $entities);
+    }
+
+    private function toDomain(MediaFileEntity $entity): MediaFile
+    {
+        $company = $entity->getCompany();
+        $createdBy = $entity->getCreatedBy();
+        \assert(null !== $company && null !== $createdBy);
+
+        return new MediaFile(
+            companyId: (string) $company->getId(),
+            filename: (string) $entity->getFilename(),
+            fileSize: (int) $entity->getFileSize(),
+            fileType: (string) $entity->getFileType(),
+            storage: StorageProviderEnum::from((string) $entity->getStorage()),
+            path: (string) $entity->getPath(),
+            createdBy: (string) $createdBy->getId(),
+            createdAt: $entity->getCreatedAt() ?? new \DateTimeImmutable(),
+            updatedBy: $entity->getUpdatedBy()?->getId()?->toString(),
+            deletedBy: $entity->getDeletedBy()?->getId()?->toString(),
+            updatedAt: $entity->getUpdatedAt(),
+            deletedAt: $entity->getDeletedAt(),
+            id: (string) $entity->getId(),
+        );
     }
 }

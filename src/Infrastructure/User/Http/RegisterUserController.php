@@ -17,7 +17,7 @@ final class RegisterUserController extends ApiAbstractController
     ) {
     }
 
-    #[Route('/api/user/register', name: 'app_user_register', methods: ['POST'])]
+    #[Route('/api/public/user/register', name: 'app_user_register', methods: ['POST'])]
     public function __invoke(#[MapRequestPayload] RegisterUserInput $input): JsonResponse
     {
         try {

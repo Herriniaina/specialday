@@ -41,4 +41,10 @@ class CompanyRepository implements CompanyRepositoryInterface
                 'slug' => $slug,
             ]);
     }
+
+    #[\Override]
+    public function existsById(string $id): bool
+    {
+        return null !== $this->em->find(CompanyEntity::class, $id);
+    }
 }

@@ -16,7 +16,7 @@ final class VerifyUserEmailController extends ApiAbstractController
     ) {
     }
 
-    #[Route('/api/user/verify-email/{token}', name: 'app_user_verify_email', methods: ['POST'])]
+    #[Route('/api/public/user/verify-email/{token}', name: 'app_user_verify_email', methods: ['POST'])]
     public function __invoke(string $token): JsonResponse
     {
         try {

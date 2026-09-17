@@ -360,10 +360,20 @@ entity** FQCN, fields configured in `configureFields()`. Register it in
    (`App\Domain\Booking\BookingRepositoryInterface: '@App\Infrastructure\Booking\Repository\BookingRepository'`).
    Everything in `src/` is otherwise auto-registered by the `App\:` resource
    loader with `autowire`/`autoconfigure` on.
-2. **Public endpoints**: add an `access_control` line in
-   `config/packages/security.yaml` (new API paths are behind
-   `IS_AUTHENTICATED_FULLY` by default; register-style public routes need an
-   explicit `PUBLIC_ACCESS` entry, placed **before** the `^/api` catch-all).
+2. **Public endpoints**: every API route reachable without authentication
+   **must** live under the `/api/public/...` path prefix — never give an
+   individual route its own `PUBLIC_ACCESS` entry. `config/packages/security.yaml`
+   already grants `PUBLIC_ACCESS` to the whole prefix
+   (`{ path: ^/api/public, roles: PUBLIC_ACCESS }`, placed **before** the
+   `^/api` catch-all that requires `IS_AUTHENTICATED_FULLY`), so a new public
+   controller only needs its `#[Route]` path to start with `/api/public/`
+   (e.g. `/api/public/company/{companyId}/media`) — no security.yaml edit
+   needed. This also applies to the JWT login endpoint itself
+   (`/api/public/login`, wired through the `login` firewall's `pattern` and
+   `json_login.check_path`, plus the `api_login` entry in
+   `config/routes.yaml`). Everything else under `/api/...` is authenticated by
+   default; only move a route out of `/api/public/` if it should require
+   auth.
 3. **Entity change**: create a migration in `migrations/`.
 4. **Event listener**: needs an explicit service definition with
    `kernel.event_listener` tags in `config/services.yaml` (see
