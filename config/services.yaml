@@ -28,6 +28,12 @@ services:
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest, priority: 16 }
 
+    App\Infrastructure\Shared\Http\EventListeners\JwtAuthenticationFailureListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_not_found, method: onJwtNotFound }
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_invalid, method: onJwtInvalid }
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_expired, method: onJwtExpired }
+
     App\Application\User\PasswordHasherInterface:
         alias: App\Infrastructure\User\Security\SymfonyPasswordHasher
 

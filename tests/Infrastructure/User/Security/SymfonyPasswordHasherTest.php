@@ -28,4 +28,23 @@ class SymfonyPasswordHasherTest extends TestCase
 
         self::assertSame('hashed-password', $hasher->hash('plain-password'));
     }
+
+    public function testVerifyDelegatesToTheHasherResolvedForTheUserEntity(): void
+    {
+        $symfonyHasher = $this->createMock(SymfonyPasswordHasherInterface::class);
+        $symfonyHasher->expects(self::once())
+            ->method('verify')
+            ->with('hashed-password', 'plain-password')
+            ->willReturn(true);
+
+        $factory = $this->createMock(PasswordHasherFactoryInterface::class);
+        $factory->expects(self::once())
+            ->method('getPasswordHasher')
+            ->with(User::class)
+            ->willReturn($symfonyHasher);
+
+        $hasher = new SymfonyPasswordHasher($factory);
+
+        self::assertTrue($hasher->verify('hashed-password', 'plain-password'));
+    }
 }

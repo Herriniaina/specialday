@@ -54,9 +54,6 @@ security:
         ROLE_COMPANY_USER:  ROLE_USER
         ROLE_COMPANY_ADMIN: ROLE_COMPANY_USER
         ROLE_ADMIN:         ROLE_COMPANY_ADMIN
-        
-        # Le SUPER_ADMIN possède absolument tous les droits de l'application
-        ROLE_SUPER_ADMIN:   ROLE_ADMIN
 
     access_control:
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
@@ -64,7 +61,6 @@ security:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/user/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/user/verify-email, roles: PUBLIC_ACCESS }
-        - { path: ^/api/user/[^/]+$, methods: [PATCH], roles: PUBLIC_ACCESS }
         - { path: ^/api/company, methods: [POST], roles: PUBLIC_ACCESS }
         - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
