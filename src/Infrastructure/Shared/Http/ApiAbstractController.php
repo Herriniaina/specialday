@@ -44,9 +44,19 @@ abstract class ApiAbstractController
         return $this->jsonResponse(Response::HTTP_NOT_FOUND, $statusText);
     }
 
+    protected function forbidden(string $statusText = 'Forbidden'): JsonResponse
+    {
+        return $this->jsonResponse(Response::HTTP_FORBIDDEN, $statusText);
+    }
+
     protected function conflict(string $statusText = 'Conflict detected.'): JsonResponse
     {
         return $this->jsonResponse(Response::HTTP_CONFLICT, $statusText);
+    }
+
+    protected function payloadTooLarge(string $statusText = 'Payload too large.'): JsonResponse
+    {
+        return $this->jsonResponse(Response::HTTP_REQUEST_ENTITY_TOO_LARGE, $statusText);
     }
 
     protected function error(string $statusText = 'Internal server error'): JsonResponse
