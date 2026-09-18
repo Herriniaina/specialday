@@ -31,6 +31,12 @@ class Subscription
     #[ORM\Column(type: 'bigint', options: ['default' => 0])]
     private ?int $storageUsedBytes = 0;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $encodedMinutesUsed = 0;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $encodedMinutesPeriodStartedAt = null;
+
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $startDate = null;
 
@@ -92,6 +98,30 @@ class Subscription
     public function setStorageUsedBytes(int $storageUsedBytes): static
     {
         $this->storageUsedBytes = $storageUsedBytes;
+
+        return $this;
+    }
+
+    public function getEncodedMinutesUsed(): int
+    {
+        return $this->encodedMinutesUsed;
+    }
+
+    public function setEncodedMinutesUsed(int $encodedMinutesUsed): static
+    {
+        $this->encodedMinutesUsed = $encodedMinutesUsed;
+
+        return $this;
+    }
+
+    public function getEncodedMinutesPeriodStartedAt(): ?\DateTimeImmutable
+    {
+        return $this->encodedMinutesPeriodStartedAt;
+    }
+
+    public function setEncodedMinutesPeriodStartedAt(?\DateTimeImmutable $encodedMinutesPeriodStartedAt): static
+    {
+        $this->encodedMinutesPeriodStartedAt = $encodedMinutesPeriodStartedAt;
 
         return $this;
     }

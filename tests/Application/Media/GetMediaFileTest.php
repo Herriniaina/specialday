@@ -7,6 +7,7 @@ use App\Application\Media\GetMediaFileRequest;
 use App\Application\Media\MediaFileNotFoundException;
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +42,7 @@ class GetMediaFileTest extends TestCase
             filename: 'photo.jpg',
             fileSize: 1234,
             fileType: 'image/jpeg',
+            mediaType: MediaTypeEnum::IMAGE,
             storage: StorageProviderEnum::S3,
             path: 'company/company-id/media/media-id.jpg',
             createdBy: 'user-id',

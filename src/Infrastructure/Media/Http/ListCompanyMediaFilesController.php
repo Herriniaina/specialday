@@ -35,6 +35,7 @@ final class ListCompanyMediaFilesController extends ApiAbstractController
                 'id' => $mediaFile->getId(),
                 'company_id' => $mediaFile->companyId,
                 'filename' => $mediaFile->filename,
+                'media_type' => $mediaFile->mediaType->value,
                 // The S3 path stays internal: only GetMediaFileController resolves it to actual bytes.
                 'url' => $this->urlGenerator->generate('app_public_media_get', ['mediaId' => $mediaFile->getId()]),
             ],

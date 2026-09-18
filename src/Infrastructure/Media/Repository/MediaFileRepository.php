@@ -4,6 +4,8 @@ namespace App\Infrastructure\Media\Repository;
 
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\MediaStatusEnum;
+use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use App\Infrastructure\Company\Entity\Company as CompanyEntity;
 use App\Infrastructure\Media\Entity\MediaFile as MediaFileEntity;
@@ -34,8 +36,11 @@ class MediaFileRepository implements MediaFileRepositoryInterface
             ->setFilename($mediaFile->filename)
             ->setFileSize($mediaFile->fileSize)
             ->setFileType($mediaFile->fileType)
+            ->setMediaType($mediaFile->mediaType->value)
             ->setStorage($mediaFile->storage->value)
             ->setPath($mediaFile->path)
+            ->setStatus($mediaFile->status->value)
+            ->setDurationSeconds($mediaFile->durationSeconds)
             ->setCreatedBy($createdBy)
             ->setCreatedAt($mediaFile->createdAt)
             ->setUpdatedAt($mediaFile->updatedAt)
@@ -87,6 +92,7 @@ class MediaFileRepository implements MediaFileRepositoryInterface
             filename: (string) $entity->getFilename(),
             fileSize: (int) $entity->getFileSize(),
             fileType: (string) $entity->getFileType(),
+            mediaType: MediaTypeEnum::from((string) $entity->getMediaType()),
             storage: StorageProviderEnum::from((string) $entity->getStorage()),
             path: (string) $entity->getPath(),
             createdBy: (string) $createdBy->getId(),
@@ -96,6 +102,8 @@ class MediaFileRepository implements MediaFileRepositoryInterface
             updatedAt: $entity->getUpdatedAt(),
             deletedAt: $entity->getDeletedAt(),
             id: (string) $entity->getId(),
+            status: MediaStatusEnum::from($entity->getStatus()),
+            durationSeconds: $entity->getDurationSeconds(),
         );
     }
 }

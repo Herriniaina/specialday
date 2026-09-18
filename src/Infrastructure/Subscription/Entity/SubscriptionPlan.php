@@ -22,6 +22,9 @@ class SubscriptionPlan
     #[ORM\Column(type: 'bigint')]
     private ?int $storage = null;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $encodedMinutesQuota = 0;
+
     public function __toString(): string
     {
         return null !== $this->plan ? ucfirst($this->plan->value) : '';
@@ -52,6 +55,18 @@ class SubscriptionPlan
     public function setStorage(int $storage): static
     {
         $this->storage = $storage;
+
+        return $this;
+    }
+
+    public function getEncodedMinutesQuota(): int
+    {
+        return $this->encodedMinutesQuota;
+    }
+
+    public function setEncodedMinutesQuota(int $encodedMinutesQuota): static
+    {
+        $this->encodedMinutesQuota = $encodedMinutesQuota;
 
         return $this;
     }

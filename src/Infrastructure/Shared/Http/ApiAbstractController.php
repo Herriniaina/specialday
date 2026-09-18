@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Shared\Http;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 abstract class ApiAbstractController
@@ -31,6 +32,11 @@ abstract class ApiAbstractController
         return $this->jsonResponse(Response::HTTP_CREATED, $statusText, $payload);
     }
 
+    protected function accepted(mixed $payload = null, string $statusText = 'Accepted'): JsonResponse
+    {
+        return $this->jsonResponse(Response::HTTP_ACCEPTED, $statusText, $payload);
+    }
+
     /**
      * @param mixed[] $payload
      */
@@ -57,6 +63,24 @@ abstract class ApiAbstractController
     protected function payloadTooLarge(string $statusText = 'Payload too large.'): JsonResponse
     {
         return $this->jsonResponse(Response::HTTP_REQUEST_ENTITY_TOO_LARGE, $statusText);
+    }
+
+    protected function unsupportedMediaType(string $statusText = 'Unsupported media type.'): JsonResponse
+    {
+        return $this->jsonResponse(Response::HTTP_UNSUPPORTED_MEDIA_TYPE, $statusText);
+    }
+
+    /**
+     * @param mixed[] $payload
+     */
+    protected function conflictWithPayload(array $payload, string $statusText = 'Conflict detected.'): JsonResponse
+    {
+        return $this->jsonResponse(Response::HTTP_CONFLICT, $statusText, $payload);
+    }
+
+    protected function redirectTo(string $url, int $status = Response::HTTP_FOUND): RedirectResponse
+    {
+        return new RedirectResponse($url, $status);
     }
 
     protected function error(string $statusText = 'Internal server error'): JsonResponse

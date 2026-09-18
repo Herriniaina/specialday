@@ -21,6 +21,7 @@ RUN <<-EOF
 	apt-get update
 	apt-get install -y --no-install-recommends \
 		file \
+		ffmpeg \
 		git
 	install-php-extensions \
 		@composer \
@@ -108,7 +109,7 @@ RUN <<-'EOF'
 	apt-get update
 	apt-get install -y --no-install-recommends libtree
 	mkdir -p /tmp/libs
-	BINARIES=(frankenphp php file)
+	BINARIES=(frankenphp php file ffmpeg ffprobe)
 	for target in $(printf '%s\n' "${BINARIES[@]}" | xargs -I{} which {}) \
 		$(find "$(php -r 'echo ini_get("extension_dir");')" -maxdepth 2 -name "*.so"); do
 		libtree -pv "$target" 2>/dev/null | grep -oP '(?:── )\K/\S+(?= \[)' | while IFS= read -r lib; do
@@ -143,6 +144,10 @@ COPY --from=frankenphp_prod_builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/
 COPY --from=frankenphp_prod_builder /etc/ssl/openssl.cnf /etc/ssl/openssl.cnf
 COPY --from=frankenphp_prod_builder /usr/bin/file /usr/bin/file
 COPY --from=frankenphp_prod_builder /usr/lib/file/magic.mgc /usr/lib/file/magic.mgc
+# ffmpeg/ffprobe: used by the "worker" service to transcode uploaded videos (see
+# App\Infrastructure\Media\Video\FfmpegVideoTranscoder).
+COPY --from=frankenphp_prod_builder /usr/bin/ffmpeg /usr/bin/ffmpeg
+COPY --from=frankenphp_prod_builder /usr/bin/ffprobe /usr/bin/ffprobe
 
 ENV  OPENSSL_CONF=/etc/ssl/openssl.cnf XDG_CONFIG_HOME=/config XDG_DATA_HOME=/data SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 

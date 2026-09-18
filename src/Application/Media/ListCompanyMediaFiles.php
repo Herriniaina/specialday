@@ -6,6 +6,7 @@ use App\Domain\Company\CompanyNotFoundException;
 use App\Domain\Company\CompanyRepositoryInterface;
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\MediaStatusEnum;
 
 class ListCompanyMediaFiles
 {
@@ -24,6 +25,11 @@ class ListCompanyMediaFiles
             throw new CompanyNotFoundException('Company not found.');
         }
 
-        return $this->mediaFileRepository->findByCompanyId($request->companyId);
+        $mediaFiles = $this->mediaFileRepository->findByCompanyId($request->companyId);
+
+        return array_values(array_filter(
+            $mediaFiles,
+            static fn (MediaFile $mediaFile): bool => MediaStatusEnum::READY === $mediaFile->status,
+        ));
     }
 }

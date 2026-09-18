@@ -22,8 +22,15 @@
 
 	{$CADDY_SERVER_EXTRA_DIRECTIVES}
 
+	# Imagor: on-the-fly image transforms served from S3, kept behind the app's own host so
+	# signed URLs work without exposing a separate port (see ImagorUrlSigner / DEFAULT_URI).
+	handle_path /imagor/* {
+		reverse_proxy imagor:8000
+	}
+
 	@phpRoute {
 		not file {path}
+		not path /imagor/*
 	}
 	rewrite @phpRoute index.php
 

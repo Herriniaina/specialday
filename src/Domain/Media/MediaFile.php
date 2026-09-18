@@ -9,6 +9,7 @@ class MediaFile
         public string $filename,
         public int $fileSize,
         public string $fileType,
+        public MediaTypeEnum $mediaType,
         public StorageProviderEnum $storage,
         public string $path,
         public string $createdBy,
@@ -18,6 +19,8 @@ class MediaFile
         public ?\DateTimeImmutable $updatedAt = null,
         public ?\DateTimeImmutable $deletedAt = null,
         public ?string $id = null,
+        public MediaStatusEnum $status = MediaStatusEnum::READY,
+        public ?int $durationSeconds = null,
     ) {
     }
 

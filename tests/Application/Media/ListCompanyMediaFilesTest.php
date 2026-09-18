@@ -8,6 +8,8 @@ use App\Domain\Company\CompanyNotFoundException;
 use App\Domain\Company\CompanyRepositoryInterface;
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\MediaStatusEnum;
+use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +47,7 @@ class ListCompanyMediaFilesTest extends TestCase
             filename: 'photo.jpg',
             fileSize: 1234,
             fileType: 'image/jpeg',
+            mediaType: MediaTypeEnum::IMAGE,
             storage: StorageProviderEnum::S3,
             path: 'company/company-id/media/generated-id.jpg',
             createdBy: 'user-id',
@@ -60,5 +63,43 @@ class ListCompanyMediaFilesTest extends TestCase
         $mediaFiles = $this->listCompanyMediaFiles->execute(new ListCompanyMediaFilesRequest('company-id'));
 
         self::assertSame([$mediaFile], $mediaFiles);
+    }
+
+    public function testExecuteFiltersOutMediaFilesThatAreNotReady(): void
+    {
+        $this->companyRepository->expects(self::once())->method('existsById')->willReturn(true);
+
+        $ready = new MediaFile(
+            companyId: 'company-id',
+            filename: 'photo.jpg',
+            fileSize: 1234,
+            fileType: 'image/jpeg',
+            mediaType: MediaTypeEnum::IMAGE,
+            storage: StorageProviderEnum::S3,
+            path: 'company/company-id/media/media-id-1',
+            createdBy: 'user-id',
+            createdAt: new \DateTimeImmutable(),
+            id: 'media-id-1',
+            status: MediaStatusEnum::READY,
+        );
+        $processing = new MediaFile(
+            companyId: 'company-id',
+            filename: 'clip.mp4',
+            fileSize: 999,
+            fileType: 'video/mp4',
+            mediaType: MediaTypeEnum::VIDEO,
+            storage: StorageProviderEnum::S3,
+            path: 'company/company-id/media/media-id-2',
+            createdBy: 'user-id',
+            createdAt: new \DateTimeImmutable(),
+            id: 'media-id-2',
+            status: MediaStatusEnum::PROCESSING,
+        );
+
+        $this->mediaFileRepository->expects(self::once())->method('findByCompanyId')->willReturn([$ready, $processing]);
+
+        $mediaFiles = $this->listCompanyMediaFiles->execute(new ListCompanyMediaFilesRequest('company-id'));
+
+        self::assertSame([$ready], $mediaFiles);
     }
 }

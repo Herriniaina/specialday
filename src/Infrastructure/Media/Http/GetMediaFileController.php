@@ -2,21 +2,23 @@
 
 namespace App\Infrastructure\Media\Http;
 
-use App\Application\Media\FileStorageInterface;
 use App\Application\Media\GetMediaFile;
 use App\Application\Media\GetMediaFileRequest;
+use App\Application\Media\ImageUrlSignerInterface;
 use App\Application\Media\MediaFileNotFoundException;
+use App\Application\Media\PublicVideoUrlBuilderInterface;
+use App\Domain\Media\MediaStatusEnum;
+use App\Domain\Media\MediaTypeEnum;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class GetMediaFileController extends ApiAbstractController
 {
     public function __construct(
         private GetMediaFile $getMediaFile,
-        private FileStorageInterface $fileStorage,
+        private ImageUrlSignerInterface $imageUrlSigner,
+        private PublicVideoUrlBuilderInterface $publicVideoUrlBuilder,
     ) {
     }
 
@@ -25,25 +27,21 @@ final class GetMediaFileController extends ApiAbstractController
     {
         try {
             $mediaFile = $this->getMediaFile->execute(new GetMediaFileRequest($mediaId));
-            $stream = $this->fileStorage->readStream($mediaFile->path);
         } catch (MediaFileNotFoundException $e) {
             return $this->notFound($e->getMessage());
         } catch (\Exception) {
             return $this->error();
         }
 
-        $response = new StreamedResponse(static function () use ($stream): void {
-            fpassthru($stream);
-            fclose($stream);
-        });
+        if (MediaStatusEnum::READY !== $mediaFile->status) {
+            return $this->conflictWithPayload(['status' => $mediaFile->status->value]);
+        }
 
-        $response->headers->set('Content-Type', $mediaFile->fileType);
-        $response->headers->set('Content-Length', (string) $mediaFile->fileSize);
-        $response->headers->set(
-            'Content-Disposition',
-            HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $mediaFile->filename),
-        );
+        $url = match ($mediaFile->mediaType) {
+            MediaTypeEnum::IMAGE => $this->imageUrlSigner->sign($mediaFile->path),
+            MediaTypeEnum::VIDEO => $this->publicVideoUrlBuilder->build($mediaFile->path),
+        };
 
-        return $response;
+        return $this->redirectTo($url);
     }
 }
