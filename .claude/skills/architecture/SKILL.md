@@ -253,6 +253,40 @@ class BookingRepository implements BookingRepositoryInterface
 **Skeleton style — `extends ServiceEntityRepository`** (as in `CategoryRepository`):
 only for contexts with **no domain port**, typically admin/CRUD-only entities.
 
+#### Querying — avoid N+1, select the minimum fields
+
+For read paths, never `select('s')` a full entity when the mapper only reads
+a few of its fields — that costs the same as `SELECT *`. Select just the
+columns the domain model needs, hydrate as an array, and build the domain
+object straight from the row (skip the entity-accessor round-trip):
+
+```php
+use Doctrine\ORM\AbstractQuery;
+
+$row = $this->em->createQueryBuilder()
+    ->select('s.id AS id', 's.storageUsedBytes AS storageUsedBytes', 'sp.storage AS storageQuotaBytes')
+    ->from(SubscriptionEntity::class, 's')
+    ->join('s.subscriptionPlan', 'sp')
+    ->where('s.company = :companyId')
+    ->setParameter('companyId', $companyId)
+    ->getQuery()
+    ->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY);
+```
+
+Use `IDENTITY(s.assoc)` to pull a to-one association's raw FK instead of
+joining just to read its id.
+
+This doesn't apply to a write path that needs to mutate and `flush()` an
+entity (e.g. an increment method) — there you need the real, fully-hydrated
+entity so Doctrine's change tracking and lifecycle callbacks fire; full
+hydration there is correct, not a violation of this rule.
+
+Watch for N+1: touching a lazy `ManyToOne`/`OneToOne` field other than its
+identifier (`getId()` is free — Doctrine already knows it from the FK column
+present on the owning row) triggers one query per access. In a loop over
+many rows this becomes one query per row. Either join the association
+eagerly (as above) or avoid touching anything but `getId()` on it.
+
 ### Input DTO — `Infrastructure/[Ctx]/Http/`
 
 One `readonly` class per endpoint, resolved by Symfony's

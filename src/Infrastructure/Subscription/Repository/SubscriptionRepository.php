@@ -16,22 +16,30 @@ class SubscriptionRepository implements SubscriptionRepositoryInterface
     #[\Override]
     public function findByCompanyId(string $companyId): ?Subscription
     {
-        $entity = $this->em->getRepository(SubscriptionEntity::class)->findOneBy(['company' => $companyId]);
+        $entity = $this->em->createQueryBuilder()
+            ->select('s', 'sp')
+            ->from(SubscriptionEntity::class, 's')
+            ->join('s.subscriptionPlan', 'sp')
+            ->where('s.company = :companyId')
+            ->setParameter('companyId', $companyId)
+            ->getQuery()
+            ->getOneOrNullResult();
         if (null === $entity) {
             return null;
         }
 
-        $company = $entity->getCompany();
-        $plan = $entity->getSubscriptionPlan();
-        \assert(null !== $company && null !== $plan);
+        assert($entity instanceof SubscriptionEntity);
+
+        $subscriptionPlan = $entity->getSubscriptionPlan();
+        assert(null !== $subscriptionPlan);
 
         return new Subscription(
             id: (string) $entity->getId(),
-            companyId: (string) $company->getId(),
+            companyId: $companyId,
             storageUsedBytes: (int) $entity->getStorageUsedBytes(),
-            storageQuotaBytes: (int) $plan->getStorage(),
+            storageQuotaBytes: (int) $subscriptionPlan->getStorage(),
             encodedMinutesUsed: $entity->getEncodedMinutesUsed(),
-            encodedMinutesQuota: $plan->getEncodedMinutesQuota(),
+            encodedMinutesQuota: $subscriptionPlan->getEncodedMinutesQuota(),
             encodedMinutesPeriodStartedAt: $entity->getEncodedMinutesPeriodStartedAt(),
         );
     }
