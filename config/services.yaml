@@ -67,7 +67,21 @@ services:
                 region: '%env(AWS_S3_REGION)%'
                 accessKeyId: '%env(AWS_S3_ACCESS_KEY_ID)%'
                 accessKeySecret: '%env(AWS_S3_SECRET_ACCESS_KEY)%'
-                endpoint: '%env(AWS_S3_ENDPOINT)%'
+                endpoint: '%env(default::AWS_S3_ENDPOINT)%'
+                pathStyleEndpoint: '%env(bool:AWS_S3_PATH_STYLE_ENDPOINT)%'
+
+    # Dedicated S3 client for presigned video upload URLs handed to the browser. In dev
+    # AWS_S3_ENDPOINT is the Docker-internal "http://minio:9000" (unusable from a real browser)
+    # while AWS_S3_PUBLIC_ENDPOINT is the host-reachable equivalent. In prod both are the same
+    # (empty = default AWS endpoint).
+    media.presign_s3_client:
+        class: AsyncAws\S3\S3Client
+        arguments:
+            -
+                region: '%env(AWS_S3_REGION)%'
+                accessKeyId: '%env(AWS_S3_ACCESS_KEY_ID)%'
+                accessKeySecret: '%env(AWS_S3_SECRET_ACCESS_KEY)%'
+                endpoint: '%env(default::AWS_S3_PUBLIC_ENDPOINT)%'
                 pathStyleEndpoint: '%env(bool:AWS_S3_PATH_STYLE_ENDPOINT)%'
 
     App\Domain\Media\MediaFileRepositoryInterface:
@@ -78,3 +92,27 @@ services:
 
     App\Application\Media\FileStorageInterface:
         alias: App\Infrastructure\Media\Storage\FlysystemFileStorage
+
+    App\Application\Media\VideoUploadUrlGeneratorInterface:
+        alias: App\Infrastructure\Media\Storage\AsyncAwsVideoUploadUrlGenerator
+
+    App\Application\Media\MediaObjectMetadataReaderInterface:
+        alias: App\Infrastructure\Media\Storage\AsyncAwsMediaObjectMetadataReader
+
+    App\Application\Media\MediaSourceDownloaderInterface:
+        alias: App\Infrastructure\Media\Storage\AsyncAwsMediaSourceDownloader
+
+    App\Application\Media\PublicVideoStorageInterface:
+        alias: App\Infrastructure\Media\Storage\AsyncAwsPublicVideoStorage
+
+    App\Application\Media\PublicVideoUrlBuilderInterface:
+        alias: App\Infrastructure\Media\Storage\PublicVideoUrlBuilder
+
+    App\Application\Media\ImageUrlSignerInterface:
+        alias: App\Infrastructure\Media\Imagor\ImagorUrlSigner
+
+    App\Application\Media\VideoTranscoderInterface:
+        alias: App\Infrastructure\Media\Video\FfmpegVideoTranscoder
+
+    App\Application\Media\VideoTranscodeSchedulerInterface:
+        alias: App\Infrastructure\Media\Messenger\MessengerVideoTranscodeScheduler

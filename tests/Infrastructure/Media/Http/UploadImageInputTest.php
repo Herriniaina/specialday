@@ -2,13 +2,13 @@
 
 namespace App\Tests\Infrastructure\Media\Http;
 
-use App\Infrastructure\Media\Http\UploadMediaFileInput;
+use App\Infrastructure\Media\Http\UploadImageInput;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class UploadMediaFileInputTest extends TestCase
+class UploadImageInputTest extends TestCase
 {
     private ValidatorInterface $validator;
 
@@ -44,14 +44,14 @@ class UploadMediaFileInputTest extends TestCase
         $jpeg = (string) hex2bin('FFD8FFE000104A46494600010100000100010000FFDB004300FFD9');
         $file = $this->uploadedFile($jpeg, 'photo.jpg');
 
-        $violations = $this->validator->validate(new UploadMediaFileInput($file));
+        $violations = $this->validator->validate(new UploadImageInput($file));
 
         self::assertCount(0, $violations);
     }
 
     public function testANullFileIsRejected(): void
     {
-        $violations = $this->validator->validate(new UploadMediaFileInput());
+        $violations = $this->validator->validate(new UploadImageInput());
 
         $messages = array_map(static fn ($v) => $v->getMessage(), iterator_to_array($violations));
         self::assertContains('media.file.not_blank', $messages);
@@ -61,7 +61,7 @@ class UploadMediaFileInputTest extends TestCase
     {
         $file = $this->uploadedFile('hello world', 'notes.txt');
 
-        $violations = $this->validator->validate(new UploadMediaFileInput($file));
+        $violations = $this->validator->validate(new UploadImageInput($file));
 
         $messages = array_map(static fn ($v) => $v->getMessage(), iterator_to_array($violations));
         self::assertContains('media.file.invalid_type', $messages);

@@ -2,7 +2,7 @@
 
 namespace App\Application\Media;
 
-readonly class UploadMediaFileRequest
+readonly class UploadImageRequest
 {
     public function __construct(
         public string $companyId,

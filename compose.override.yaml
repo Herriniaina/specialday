@@ -6,6 +6,9 @@ services:
     build:
       context: .
       target: frankenphp_dev
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
     volumes:
       - ./:/app
       - ./frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
@@ -30,38 +33,16 @@ services:
     ports:
       - "3306"
 ###< doctrine/doctrine-bundle ###
-
-  # Messenger worker: consomme le transport async (Redis). Le transport "failed"
-  # (Doctrine) n'est PAS consomme ici : il sert de dead-letter, on l'inspecte /
-  # rejoue a la main (bin/console messenger:failed:show | messenger:failed:retry).
   worker:
     image: ${IMAGES_PREFIX:-}app-php-dev
     build:
       context: .
       target: frankenphp_dev
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pidof php || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-    depends_on:
-      php:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      database:
-        condition: service_healthy
     volumes:
       - ./:/app
       - /app/var
     environment:
       APP_ENV: "${APP_ENV:-dev}"
-      DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:-!ChangeMe!}@database:3306/${MYSQL_DATABASE:-app}?serverVersion=${MYSQL_VERSION:-8.0.32}&charset=${MYSQL_CHARSET:-utf8mb4}
-      MESSENGER_TRANSPORT_DSN: ${MESSENGER_TRANSPORT_DSN:-redis://redis:6379/messages}
-      MAILER_DSN: ${MAILER_DSN:-smtp://mailer:1025}
-    command: php bin/console messenger:consume async --time-limit=3600 -vv
 
   redis:
     ports:
@@ -77,3 +58,46 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 ###< symfony/mailer ###
+
+###> league/flysystem-async-aws-s3 ###
+  # S3-compatible local storage for media uploads. Web console: http://localhost:9001
+  minio:
+    # Docker Hub blocks anonymous pulls of minio/minio; quay.io is MinIO's own public mirror.
+    image: quay.io/minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_S3_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_S3_SECRET_ACCESS_KEY:-minioadmin}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # One-shot: creates the app's buckets on startup, then exits.
+  minio-init:
+    image: quay.io/minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${AWS_S3_ACCESS_KEY_ID:-minioadmin} ${AWS_S3_SECRET_ACCESS_KEY:-minioadmin} &&
+      mc mb --ignore-existing local/${AWS_S3_BUCKET:-specialday} &&
+      mc mb --ignore-existing local/${AWS_S3_PUBLIC_BUCKET:-specialday-public} &&
+      mc anonymous set download local/${AWS_S3_PUBLIC_BUCKET:-specialday-public}
+      "
+###< league/flysystem-async-aws-s3 ###
+
+  imagor:
+    ports:
+      - "8000:8000"
+
+volumes:
+  minio_data:

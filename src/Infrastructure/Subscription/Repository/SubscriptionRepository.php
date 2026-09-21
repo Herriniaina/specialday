@@ -30,6 +30,9 @@ class SubscriptionRepository implements SubscriptionRepositoryInterface
             companyId: (string) $company->getId(),
             storageUsedBytes: (int) $entity->getStorageUsedBytes(),
             storageQuotaBytes: (int) $plan->getStorage(),
+            encodedMinutesUsed: $entity->getEncodedMinutesUsed(),
+            encodedMinutesQuota: $plan->getEncodedMinutesQuota(),
+            encodedMinutesPeriodStartedAt: $entity->getEncodedMinutesPeriodStartedAt(),
         );
     }
 
@@ -42,6 +45,24 @@ class SubscriptionRepository implements SubscriptionRepositoryInterface
         }
 
         $entity->setStorageUsedBytes((int) $entity->getStorageUsedBytes() + $bytes);
+        $this->em->flush();
+    }
+
+    #[\Override]
+    public function incrementEncodedMinutesUsed(string $companyId, int $minutes, \DateTimeImmutable $now): void
+    {
+        $entity = $this->em->getRepository(SubscriptionEntity::class)->findOneBy(['company' => $companyId]);
+        if (null === $entity) {
+            return;
+        }
+
+        $periodStartedAt = $entity->getEncodedMinutesPeriodStartedAt();
+        $isSamePeriod = null !== $periodStartedAt && $periodStartedAt->format('Y-m') === $now->format('Y-m');
+
+        $entity
+            ->setEncodedMinutesUsed(($isSamePeriod ? $entity->getEncodedMinutesUsed() : 0) + $minutes)
+            ->setEncodedMinutesPeriodStartedAt($isSamePeriod ? $periodStartedAt : $now);
+
         $this->em->flush();
     }
 }

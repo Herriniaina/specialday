@@ -16,7 +16,7 @@ final class CreateCompanyController extends ApiAbstractController
     ) {
     }
 
-    #[Route('/api/company', name: 'app_company_create', methods: ['POST'])]
+    #[Route('/api/public/company', name: 'app_company_create', methods: ['POST'])]
     public function __invoke(#[MapRequestPayload] CreateCompanyInput $input): JsonResponse
     {
         try {

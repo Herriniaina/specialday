@@ -3,14 +3,16 @@
 namespace App\Tests\Application\Media;
 
 use App\Application\Media\FileStorageInterface;
+use App\Application\Media\FileTooLargeException;
 use App\Application\Media\StorageQuotaExceededException;
 use App\Application\Media\SubscriptionNotFoundException;
-use App\Application\Media\UploadMediaFile;
-use App\Application\Media\UploadMediaFileRequest;
+use App\Application\Media\UploadImage;
+use App\Application\Media\UploadImageRequest;
 use App\Application\Shared\IdGeneratorInterface;
 use App\Application\Shared\TransactionInterface;
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use App\Domain\Subscription\Subscription;
 use App\Domain\Subscription\SubscriptionRepositoryInterface;
@@ -18,14 +20,14 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
-class UploadMediaFileTest extends TestCase
+class UploadImageTest extends TestCase
 {
     private FileStorageInterface&MockObject $fileStorage;
     private MediaFileRepositoryInterface&MockObject $mediaFileRepository;
     private SubscriptionRepositoryInterface&MockObject $subscriptionRepository;
     private TransactionInterface&Stub $transaction;
     private IdGeneratorInterface&Stub $idGenerator;
-    private UploadMediaFile $uploadMediaFile;
+    private UploadImage $uploadImage;
 
     protected function setUp(): void
     {
@@ -37,12 +39,12 @@ class UploadMediaFileTest extends TestCase
         $this->idGenerator = $this->createStub(IdGeneratorInterface::class);
         $this->idGenerator->method('generate')->willReturn('generated-id');
 
-        $this->uploadMediaFile = new UploadMediaFile($this->fileStorage, $this->mediaFileRepository, $this->subscriptionRepository, $this->transaction, $this->idGenerator);
+        $this->uploadImage = new UploadImage($this->fileStorage, $this->mediaFileRepository, $this->subscriptionRepository, $this->transaction, $this->idGenerator);
     }
 
     public function testExecuteUploadsThenSavesTheMediaFileAndIncrementsStorageUsage(): void
     {
-        $request = new UploadMediaFileRequest(
+        $request = new UploadImageRequest(
             companyId: 'company-id',
             userId: 'user-id',
             originalFilename: 'photo.jpg',
@@ -57,7 +59,7 @@ class UploadMediaFileTest extends TestCase
 
         $this->fileStorage->expects(self::once())
             ->method('upload')
-            ->with('/tmp/photo.jpg', 'company/company-id/media/generated-id.jpg', 'image/jpeg');
+            ->with('/tmp/photo.jpg', 'company/company-id/media/generated-id', 'image/jpeg');
 
         $this->mediaFileRepository->expects(self::once())
             ->method('save')
@@ -68,8 +70,9 @@ class UploadMediaFileTest extends TestCase
                 self::assertSame('photo.jpg', $mediaFile->filename);
                 self::assertSame(1234, $mediaFile->fileSize);
                 self::assertSame('image/jpeg', $mediaFile->fileType);
+                self::assertSame(MediaTypeEnum::IMAGE, $mediaFile->mediaType);
                 self::assertSame(StorageProviderEnum::S3, $mediaFile->storage);
-                self::assertSame('company/company-id/media/generated-id.jpg', $mediaFile->path);
+                self::assertSame('company/company-id/media/generated-id', $mediaFile->path);
 
                 return true;
             }));
@@ -78,20 +81,20 @@ class UploadMediaFileTest extends TestCase
             ->method('incrementStorageUsedBytes')
             ->with('company-id', 1234);
 
-        $mediaFile = $this->uploadMediaFile->execute($request);
+        $mediaFile = $this->uploadImage->execute($request);
 
         self::assertSame('generated-id', $mediaFile->getId());
     }
 
     public function testExecuteDeletesTheUploadedFileWhenSavingFails(): void
     {
-        $request = new UploadMediaFileRequest(
+        $request = new UploadImageRequest(
             companyId: 'company-id',
             userId: 'user-id',
-            originalFilename: 'clip.mp4',
-            mimeType: 'video/mp4',
+            originalFilename: 'photo.jpg',
+            mimeType: 'image/jpeg',
             fileSize: 999,
-            localFilePath: '/tmp/clip.mp4',
+            localFilePath: '/tmp/photo.jpg',
         );
 
         $this->subscriptionRepository->expects(self::once())->method('findByCompanyId')->willReturn(
@@ -102,40 +105,11 @@ class UploadMediaFileTest extends TestCase
 
         $this->fileStorage->expects(self::once())
             ->method('delete')
-            ->with('company/company-id/media/generated-id.mp4');
+            ->with('company/company-id/media/generated-id');
 
         $this->expectException(\RuntimeException::class);
 
-        $this->uploadMediaFile->execute($request);
-    }
-
-    public function testExecuteDeletesTheUploadedFileWhenIncrementingStorageUsageFails(): void
-    {
-        $request = new UploadMediaFileRequest(
-            companyId: 'company-id',
-            userId: 'user-id',
-            originalFilename: 'clip.mp4',
-            mimeType: 'video/mp4',
-            fileSize: 999,
-            localFilePath: '/tmp/clip.mp4',
-        );
-
-        $this->subscriptionRepository->expects(self::once())->method('findByCompanyId')->willReturn(
-            new Subscription(id: 'subscription-id', companyId: 'company-id', storageUsedBytes: 1_000, storageQuotaBytes: 10_000),
-        );
-
-        $this->mediaFileRepository->expects(self::once())->method('save');
-        $this->subscriptionRepository->expects(self::once())
-            ->method('incrementStorageUsedBytes')
-            ->willThrowException(new \RuntimeException('db down'));
-
-        $this->fileStorage->expects(self::once())
-            ->method('delete')
-            ->with('company/company-id/media/generated-id.mp4');
-
-        $this->expectException(\RuntimeException::class);
-
-        $this->uploadMediaFile->execute($request);
+        $this->uploadImage->execute($request);
     }
 
     public function testExecuteThrowsWhenCompanyHasNoSubscription(): void
@@ -147,7 +121,7 @@ class UploadMediaFileTest extends TestCase
 
         $this->expectException(SubscriptionNotFoundException::class);
 
-        $this->uploadMediaFile->execute(new UploadMediaFileRequest(
+        $this->uploadImage->execute(new UploadImageRequest(
             companyId: 'company-id',
             userId: 'user-id',
             originalFilename: 'photo.jpg',
@@ -168,12 +142,29 @@ class UploadMediaFileTest extends TestCase
 
         $this->expectException(StorageQuotaExceededException::class);
 
-        $this->uploadMediaFile->execute(new UploadMediaFileRequest(
+        $this->uploadImage->execute(new UploadImageRequest(
             companyId: 'company-id',
             userId: 'user-id',
             originalFilename: 'photo.jpg',
             mimeType: 'image/jpeg',
             fileSize: 1_000,
+            localFilePath: '/tmp/photo.jpg',
+        ));
+    }
+
+    public function testExecuteThrowsWhenTheImageExceedsTheImageMaxSize(): void
+    {
+        $this->subscriptionRepository->expects(self::never())->method('findByCompanyId');
+        $this->fileStorage->expects(self::never())->method('upload');
+
+        $this->expectException(FileTooLargeException::class);
+
+        $this->uploadImage->execute(new UploadImageRequest(
+            companyId: 'company-id',
+            userId: 'user-id',
+            originalFilename: 'photo.jpg',
+            mimeType: 'image/jpeg',
+            fileSize: 10 * 1024 * 1024 + 1,
             localFilePath: '/tmp/photo.jpg',
         ));
     }

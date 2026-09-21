@@ -5,11 +5,13 @@ namespace App\Application\Media;
 use App\Application\Shared\IdGeneratorInterface;
 use App\Application\Shared\TransactionInterface;
 use App\Domain\Media\MediaFile;
+use App\Domain\Media\MediaFilePathBuilder;
 use App\Domain\Media\MediaFileRepositoryInterface;
+use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use App\Domain\Subscription\SubscriptionRepositoryInterface;
 
-class UploadMediaFile
+class UploadImage
 {
     public function __construct(
         private FileStorageInterface $fileStorage,
@@ -20,8 +22,13 @@ class UploadMediaFile
     ) {
     }
 
-    public function execute(UploadMediaFileRequest $request): MediaFile
+    public function execute(UploadImageRequest $request): MediaFile
     {
+        $mediaType = MediaTypeEnum::fromMimeType($request->mimeType);
+        if ($request->fileSize > $mediaType->maxFileSizeInBytes()) {
+            throw new FileTooLargeException(\sprintf('File exceeds the maximum size allowed for %s files.', $mediaType->value));
+        }
+
         $subscription = $this->subscriptionRepository->findByCompanyId($request->companyId);
         if (null === $subscription) {
             throw new SubscriptionNotFoundException('No active subscription found for this company.');
@@ -32,7 +39,7 @@ class UploadMediaFile
         }
 
         $id = $this->idGenerator->generate();
-        $path = \sprintf('company/%s/media/%s', $request->companyId, $id.$this->extensionOf($request->originalFilename));
+        $path = MediaFilePathBuilder::build($request->companyId, $id);
 
         $this->fileStorage->upload($request->localFilePath, $path, $request->mimeType);
 
@@ -41,6 +48,7 @@ class UploadMediaFile
             filename: $request->originalFilename,
             fileSize: $request->fileSize,
             fileType: $request->mimeType,
+            mediaType: $mediaType,
             storage: StorageProviderEnum::S3,
             path: $path,
             createdBy: $request->userId,
@@ -60,12 +68,5 @@ class UploadMediaFile
         }
 
         return $mediaFile;
-    }
-
-    private function extensionOf(string $filename): string
-    {
-        $extension = pathinfo($filename, PATHINFO_EXTENSION);
-
-        return '' === $extension ? '' : '.'.$extension;
     }
 }

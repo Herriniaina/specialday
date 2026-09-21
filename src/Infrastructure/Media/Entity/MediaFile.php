@@ -28,10 +28,19 @@ class MediaFile
     private ?string $fileType = null;
 
     #[ORM\Column(length: 20)]
+    private ?string $mediaType = null;
+
+    #[ORM\Column(length: 20)]
     private ?string $storage = null;
 
     #[ORM\Column(length: 500)]
     private ?string $path = null;
+
+    #[ORM\Column(length: 20, options: ['default' => 'ready'])]
+    private string $status = 'ready';
+
+    #[ORM\Column(nullable: true)]
+    private ?int $durationSeconds = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'created_by', referencedColumnName: 'id', nullable: false)]
@@ -114,6 +123,18 @@ class MediaFile
         return $this;
     }
 
+    public function getMediaType(): ?string
+    {
+        return $this->mediaType;
+    }
+
+    public function setMediaType(string $mediaType): static
+    {
+        $this->mediaType = $mediaType;
+
+        return $this;
+    }
+
     public function getStorage(): ?string
     {
         return $this->storage;
@@ -134,6 +155,30 @@ class MediaFile
     public function setPath(string $path): static
     {
         $this->path = $path;
+
+        return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function getDurationSeconds(): ?int
+    {
+        return $this->durationSeconds;
+    }
+
+    public function setDurationSeconds(?int $durationSeconds): static
+    {
+        $this->durationSeconds = $durationSeconds;
 
         return $this;
     }
