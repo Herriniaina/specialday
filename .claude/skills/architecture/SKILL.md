@@ -390,6 +390,44 @@ no manual violation-collecting loop needed. Routes are attribute-based and
 auto-imported (`config/routes.yaml` → `routing.controllers`). No YAML route
 entry needed.
 
+### Testing — every new route needs unit tests
+
+A new endpoint is not done until it has tests. This codebase has no
+`WebTestCase`/functional HTTP tests — coverage comes from two unit-test
+files per route, mirroring `tests/Application/[Ctx]/` and
+`tests/Infrastructure/[Ctx]/Http/` (see `CreateCompanyTest`/
+`CreateCompanyInputTest`, `ListCompanyMediaFilesTest`, or
+`CreateSubscriptionTest`/`CreateSubscriptionInputTest`):
+
+1. **Use case test** — `tests/Application/[Ctx]/<UseCase>Test.php`, plain
+   `TestCase`. Mock every port the use case depends on with
+   `createMock(...)` (assert on calls with `expects(self::once())->method(...)
+   ->with(...)`) or `createStub(...)` for ports whose calls you don't need to
+   assert (see the `&MockObject` / `&Stub` property types in existing tests).
+   Cover: the happy path (correct data passed to `save`/`create`, correct
+   return value), and **every exception the use case can throw** — one test
+   per guard clause (not-found, already-exists, etc.), asserting the
+   short-circuited port method (e.g. `save`/`create`) is `expects(self::never())`.
+   PHPUnit's mock-expectation check is strict here: a `MockObject` stubbed
+   with only `->method(...)->willReturn(...)` and no `expects(...)` on any of
+   its methods raises a `PHPUnit Notice` ("No expectations were configured
+   for the mock") — always call it through `expects(self::once())` (or use
+   `createStub` if the test genuinely doesn't care how many times/with what
+   args it's called).
+2. **Input DTO validation test** — `tests/Infrastructure/[Ctx]/Http/<Input>Test.php`,
+   build a real `ValidatorInterface` via
+   `Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator()`
+   (no HTTP kernel needed). Cover: a fully valid input has zero violations,
+   defaulted/optional fields are valid when omitted, and each constraint
+   (`NotBlank`, `Uuid`, `Choice`, `Length`, …) is individually violated by a
+   bad value, asserting the violation's `message` matches the translation key
+   set on the attribute.
+
+Run `docker compose exec php php bin/phpunit <path>` (project has no bare
+`php`/`vendor/bin/phpunit` on the host — always go through the `php`
+container) and `docker compose exec php vendor/bin/phpstan analyse` before
+considering the route finished.
+
 ### EasyAdmin CRUD — `Infrastructure/Admin/Http/`
 
 `extends AbstractCrudController`, `getEntityFqcn()` returns the **Doctrine
@@ -429,6 +467,8 @@ entity** FQCN, fields configured in `configureFields()`. Register it in
 4. **Event listener**: needs an explicit service definition with
    `kernel.event_listener` tags in `config/services.yaml` (see
    `AcceptLanguageLocaleListener`).
+5. **Tests**: every new route ships with its use-case test and Input DTO
+   validation test — see Testing above. A route without tests isn't finished.
 
 ---
 
