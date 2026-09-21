@@ -2,9 +2,13 @@
 
 namespace App\Infrastructure\Subscription\Repository;
 
+use App\Domain\Subscription\PaymentMethodEnum;
+use App\Domain\Subscription\PlanEnum;
 use App\Domain\Subscription\Subscription;
 use App\Domain\Subscription\SubscriptionRepositoryInterface;
+use App\Infrastructure\Company\Entity\Company as CompanyEntity;
 use App\Infrastructure\Subscription\Entity\Subscription as SubscriptionEntity;
+use App\Infrastructure\Subscription\Entity\SubscriptionPlan as SubscriptionPlanEntity;
 use Doctrine\ORM\EntityManagerInterface;
 
 class SubscriptionRepository implements SubscriptionRepositoryInterface
@@ -33,7 +37,7 @@ class SubscriptionRepository implements SubscriptionRepositoryInterface
         $subscriptionPlan = $entity->getSubscriptionPlan();
         assert(null !== $subscriptionPlan);
 
-        return new Subscription(
+        $subscription = new Subscription(
             id: (string) $entity->getId(),
             companyId: $companyId,
             storageUsedBytes: (int) $entity->getStorageUsedBytes(),
@@ -42,6 +46,39 @@ class SubscriptionRepository implements SubscriptionRepositoryInterface
             encodedMinutesQuota: $subscriptionPlan->getEncodedMinutesQuota(),
             encodedMinutesPeriodStartedAt: $entity->getEncodedMinutesPeriodStartedAt(),
         );
+
+        $this->em->detach($entity);
+
+        return $subscription;
+    }
+
+    #[\Override]
+    public function existsByCompanyId(string $companyId): bool
+    {
+        return 0 < $this->em->getRepository(SubscriptionEntity::class)->count(['company' => $companyId]);
+    }
+
+    #[\Override]
+    public function create(string $companyId, PlanEnum $plan, ?PaymentMethodEnum $paymentMethod, \DateTimeImmutable $startDate): string
+    {
+        $subscriptionPlan = $this->em->getRepository(SubscriptionPlanEntity::class)->findOneBy(['plan' => $plan]);
+        if (null === $subscriptionPlan) {
+            throw new \RuntimeException(\sprintf('No subscription plan configured for "%s".', $plan->value));
+        }
+
+        $company = $this->em->getReference(CompanyEntity::class, $companyId);
+        assert($company instanceof CompanyEntity);
+
+        $entity = new SubscriptionEntity()
+            ->setCompany($company)
+            ->setSubscriptionPlan($subscriptionPlan)
+            ->setPaymentMethod($paymentMethod)
+            ->setStartDate($startDate);
+
+        $this->em->persist($entity);
+        $this->em->flush();
+
+        return (string) $entity->getId();
     }
 
     #[\Override]

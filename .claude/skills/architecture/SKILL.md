@@ -255,8 +255,9 @@ only for contexts with **no domain port**, typically admin/CRUD-only entities.
 
 #### Querying — avoid N+1, select the minimum fields
 
-For read paths, never `select('s')` a full entity when the mapper only reads
-a few of its fields — that costs the same as `SELECT *`. Select just the
+For read paths returning **many rows** (lists, exports, reports), never
+`select('s')` a full entity when the mapper only reads a few of its fields —
+that costs the same as `SELECT *`, multiplied by every row. Select just the
 columns the domain model needs, hydrate as an array, and build the domain
 object straight from the row (skip the entity-accessor round-trip):
 
@@ -276,10 +277,26 @@ $row = $this->em->createQueryBuilder()
 Use `IDENTITY(s.assoc)` to pull a to-one association's raw FK instead of
 joining just to read its id.
 
-This doesn't apply to a write path that needs to mutate and `flush()` an
-entity (e.g. an increment method) — there you need the real, fully-hydrated
-entity so Doctrine's change tracking and lifecycle callbacks fire; full
-hydration there is correct, not a violation of this rule.
+For a **single-row lookup** (e.g. `findByCompanyId` returning one nullable
+domain object), the column-count/network savings above are negligible —
+selecting the full entity (+ its joined to-one associations) and mapping via
+its typed getters is fine, and PHPStan-friendlier than an array shape. See
+`SubscriptionRepository::findByCompanyId` for the pattern: `select('s', 'sp')`,
+object hydration, `assert($entity instanceof …)` to narrow past
+`getOneOrNullResult()`'s `mixed` return type, then map into the domain object.
+**Always `$this->em->detach($entity)` before returning** in this case — the
+entity would otherwise stay in the `EntityManager`'s identity map as
+*managed*. That's harmless in a short-lived HTTP request, but this app also
+runs a Messenger worker (long-lived process): a lingering managed entity
+grows worker memory over the process lifetime and can get written by an
+unrelated `flush()` elsewhere in the same message if something mutates it.
+Detaching keeps a read-only lookup side-effect-free.
+
+None of this applies to a write path that needs to mutate and `flush()` an
+entity (e.g. an increment method) — there you need the real, fully-hydrated,
+**managed** entity so Doctrine's change tracking and lifecycle callbacks
+fire; full hydration (without detaching) there is correct, not a violation
+of this rule.
 
 Watch for N+1: touching a lazy `ManyToOne`/`OneToOne` field other than its
 identifier (`getId()` is free — Doctrine already knows it from the FK column
