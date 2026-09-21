@@ -26,13 +26,12 @@ final class Version20260914110000 extends AbstractMigration
             ) DEFAULT CHARACTER SET utf8mb4
         SQL);
 
-        // Seed the plan catalog with the values previously hardcoded in the PlanEnum/default storage quota.
-        // Adjust the per-plan storage quota afterwards from the "Plans d'abonnement" admin screen.
         $this->addSql(<<<'SQL'
             INSERT INTO subscription_plan (id, plan, storage) VALUES
-              ('6e26bf2b-f5da-4fe2-bcb5-68c662713f3d', 'free', 5368709120),
-              ('053c389a-b4e5-457e-9a30-1fc4ec0fc82a', 'standard', 5368709120),
-              ('72a47199-98b3-4b9e-b08e-951fefc120a7', 'premium', 5368709120)
+              ('6e26bf2b-f5da-4fe2-bcb5-68c662713f3d', 'free', 2097152),
+              ('053c389a-b4e5-457e-9a30-1fc4ec0fc82a', 'standard', 2147483648),
+              ('526d07f3-ef48-4882-8d97-fa99fc511247', 'pro', 5368709120),
+              ('72a47199-98b3-4b9e-b08e-951fefc120a7', 'premium', 10737418240)
         SQL);
 
         $this->addSql('ALTER TABLE subscription ADD subscription_plan_id CHAR(36) DEFAULT NULL');
