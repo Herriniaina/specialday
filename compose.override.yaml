@@ -6,6 +6,9 @@ services:
     build:
       context: .
       target: frankenphp_dev
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
     volumes:
       - ./:/app
       - ./frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
@@ -30,9 +33,6 @@ services:
     ports:
       - "3306"
 ###< doctrine/doctrine-bundle ###
-
-  # Dev-only image/build/bind-mounts for the worker; the shared shape (depends_on, healthcheck,
-  # environment, command) lives in compose.yaml so it applies in prod too.
   worker:
     image: ${IMAGES_PREFIX:-}app-php-dev
     build:
@@ -75,9 +75,6 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      # Fixed (not random) host port: AWS_S3_PUBLIC_ENDPOINT/PUBLIC_VIDEO_BASE_URL point at
-      # localhost:9000, since presigned/public URLs are handed to a real browser, not resolved
-      # from inside the Docker network.
       - "9000:9000"
       - "9001:9001"
     volumes:
