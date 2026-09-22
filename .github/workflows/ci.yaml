@@ -52,11 +52,45 @@ jobs:
       # Uncomment if Doctrine Migrations is installed
       # - name: Run migrations
       #   run: docker compose exec -T php bin/console -e test doctrine:migrations:migrate --no-interaction
-      - name: Run PHPUnit
-        run: docker compose exec -T php bin/phpunit
+      - name: Run PHPUnit with coverage
+        run: docker compose exec -T -e XDEBUG_MODE=coverage php bin/phpunit --coverage-clover=coverage.xml
       # Uncomment if Doctrine ORM is installed
       # - name: Doctrine Schema Validator
       #   run: docker compose exec -T php bin/console -e test doctrine:schema:validate
+      - name: Extract coverage percentage
+        id: coverage
+        run: |
+          PERCENTAGE=$(docker compose exec -T php php bin/coverage-percentage.php coverage.xml)
+          echo "percentage=$PERCENTAGE" >> "$GITHUB_OUTPUT"
+          echo "Coverage: ${PERCENTAGE}%"
+      - name: Fetch coverage baseline
+        id: baseline
+        run: |
+          BASELINE=$(curl -fsSL "https://gist.githubusercontent.com/${{ vars.COVERAGE_GIST_OWNER }}/${{ vars.COVERAGE_GIST_ID }}/raw/coverage.json" | jq -r '.message' | tr -d '%')
+          echo "baseline=$BASELINE" >> "$GITHUB_OUTPUT"
+          echo "Baseline: ${BASELINE}%"
+      - name: Fail if coverage decreased
+        run: |
+          awk -v new="${{ steps.coverage.outputs.percentage }}" -v base="${{ steps.baseline.outputs.baseline }}" \
+            'BEGIN {
+              if (new + 0 < base + 0) {
+                printf "Coverage dropped: %.2f%% < %.2f%%\n", new, base
+                exit 1
+              }
+              printf "Coverage OK: %.2f%% >= %.2f%%\n", new, base
+            }'
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: coverage.json
+          label: coverage
+          message: ${{ steps.coverage.outputs.percentage }}%
+          valColorRange: ${{ steps.coverage.outputs.percentage }}
+          maxColorRange: 100
+          minColorRange: 0
   lint:
     name: Lint
     runs-on: ubuntu-latest

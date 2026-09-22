@@ -5,8 +5,11 @@ on:
   push:
     branches:
       - 'fix/sd-*'
+      - 'fix/SD-*'
       - 'hotfix/sd-*'
+      - 'hotfix/SD-*'
       - 'feat/sd-*'
+      - 'feat/SD-*'
 
 permissions:
   contents: read
