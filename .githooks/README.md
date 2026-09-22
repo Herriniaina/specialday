@@ -8,8 +8,10 @@ Versioned hooks enforcing the project's branch and commit naming convention:
   `hotfix/`, `junk/` or `refacto/` followed by `SD-XXXX` (4 digits), e.g.
   `feat/SD-0005-media`. `main`, `master` and `develop` are exempt.
 
-Both checks are case-insensitive on `SD`/`sd` and only enforce the prefix —
-anything can follow the ticket number.
+`SD` must be uppercase: `.github/workflows/auto-pr.yaml` filters pushed
+branches case-sensitively, so a branch named `sd-` would be pushed without
+ever opening a PR. Both checks only enforce the prefix — anything can follow
+the ticket number.
 
 ## Setup
 
