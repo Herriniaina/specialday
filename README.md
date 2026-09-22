@@ -1,5 +1,7 @@
 # SpecialDay
 
+![coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Herriniaina/bc64628c9b1ba46a439c5c2e1c17437b/raw/coverage.json)
+
 Symfony application running on FrankenPHP via Docker.
 
 ## Getting Started
