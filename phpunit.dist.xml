@@ -32,6 +32,21 @@
             <directory>src</directory>
         </include>
 
+        <exclude>
+            <!-- Symfony framework bootstrap, no logic of ours to cover -->
+            <file>src/Kernel.php</file>
+            <!-- EasyAdmin CRUD/dashboard scaffolding: declarative field config, no branching logic -->
+            <directory>src/Infrastructure/Admin</directory>
+            <!-- Empty ServiceEntityRepository subclass, no custom methods -->
+            <file>src/Infrastructure/Category/Repository/CategoryRepository.php</file>
+            <!-- Doctrine entities that are pure getters/setters (ORM mapping only, no logic) -->
+            <file>src/Infrastructure/Category/Entity/Category.php</file>
+            <file>src/Infrastructure/Company/Entity/Company.php</file>
+            <file>src/Infrastructure/Media/Entity/MediaFile.php</file>
+            <file>src/Infrastructure/Subscription/Entity/Subscription.php</file>
+            <file>src/Infrastructure/Subscription/Entity/SubscriptionPlan.php</file>
+        </exclude>
+
         <deprecationTrigger>
             <method>Doctrine\Deprecations\Deprecation::trigger</method>
             <method>Doctrine\Deprecations\Deprecation::delegateTriggerToBackend</method>
