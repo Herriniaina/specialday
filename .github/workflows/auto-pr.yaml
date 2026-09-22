@@ -1,0 +1,37 @@
+---
+name: Auto PR
+
+on:
+  push:
+    branches:
+      - 'fix/sd-*'
+      - 'hotfix/sd-*'
+      - 'feat/sd-*'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    name: Open PR for pushed branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Create PR if none exists yet
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          OPEN_PR_COUNT=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+
+          if [ "$OPEN_PR_COUNT" -gt 0 ]; then
+            echo "An open PR already exists for $BRANCH, skipping."
+            exit 0
+          fi
+
+          gh pr create --base main --head "$BRANCH" --fill \
+            || echo "Could not create a PR for $BRANCH (e.g. no commits ahead of main yet), skipping."
