@@ -1,0 +1,30 @@
+---
+name: Trello Integration
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+
+permissions: {}
+
+jobs:
+  link-trello:
+    name: Link PR to Trello card
+    runs-on: ubuntu-latest
+    # Secrets are not exposed to PRs from forks; the action would fail hard.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Attach the PR to its Trello card
+        uses: dalezak/github-commit-to-trello-card@8553b8dcebea96f16113805938934b4f96841e2e # main @ 2022-11-03 (v3 tag is node12 + lacks card-id-pattern)
+        with:
+          trello-api-key: ${{ secrets.TRELLO_KEY }}
+          trello-auth-token: ${{ secrets.TRELLO_TOKEN }}
+          trello-board-id: ${{ secrets.TRELLO_BOARD }}
+          trello-card-action: "Attachment"
+          # Case-sensitive, and also used as a literal string to strip the
+          # prefix: "SD-0010" -> card number "0010". Keep it plain.
+          trello-card-id-pattern: "SD-"
+          # Required by the action even though it is only used on push events.
+          trello-list-name-commit: "IN PROGRESS"
+          trello-list-name-pr-open: "REVIEW"
+          trello-list-name-pr-closed: "TO VALIDATE"
