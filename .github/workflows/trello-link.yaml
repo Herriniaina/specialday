@@ -14,7 +14,12 @@ jobs:
     # Secrets are not exposed to PRs from forks; the action would fail hard.
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Attach the PR to its Trello card
+      # The action posts the attachment before it looks at the PR state, and
+      # the Trello API happily stores the same URL twice, so attaching on every
+      # event would leave one duplicate per open/close cycle. Attach once, on
+      # creation, and let the later events only move the card.
+      - name: Attach the PR to its Trello card and move it to review
+        if: github.event.action == 'opened'
         uses: dalezak/github-commit-to-trello-card@8553b8dcebea96f16113805938934b4f96841e2e # main @ 2022-11-03 (v3 tag is node12 + lacks card-id-pattern)
         with:
           trello-api-key: ${{ secrets.TRELLO_KEY }}
@@ -25,6 +30,23 @@ jobs:
           # prefix: "SD-0010" -> card number "0010". Keep it plain.
           trello-card-id-pattern: "SD-"
           # Required by the action even though it is only used on push events.
+          trello-list-name-commit: "IN PROGRESS"
+          trello-list-name-pr-open: "REVIEW"
+          trello-list-name-pr-closed: "TO VALIDATE"
+
+      - name: Move the Trello card without re-attaching the PR
+        if: github.event.action != 'opened'
+        uses: dalezak/github-commit-to-trello-card@8553b8dcebea96f16113805938934b4f96841e2e # main @ 2022-11-03 (v3 tag is node12 + lacks card-id-pattern)
+        with:
+          trello-api-key: ${{ secrets.TRELLO_KEY }}
+          trello-auth-token: ${{ secrets.TRELLO_TOKEN }}
+          trello-board-id: ${{ secrets.TRELLO_BOARD }}
+          # The attach/comment branches are an if / else-if with no else, while
+          # the card move is a separate block, so an unrecognised value here
+          # skips the attachment and still moves the card. The input is
+          # declared required, hence a placeholder rather than an empty string.
+          trello-card-action: "None"
+          trello-card-id-pattern: "SD-"
           trello-list-name-commit: "IN PROGRESS"
           trello-list-name-pr-open: "REVIEW"
           trello-list-name-pr-closed: "TO VALIDATE"

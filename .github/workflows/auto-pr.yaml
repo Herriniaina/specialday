@@ -31,6 +31,9 @@ jobs:
       - name: Create PR if none exists yet
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRELLO_KEY: ${{ secrets.TRELLO_KEY }}
+          TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
+          TRELLO_BOARD: ${{ secrets.TRELLO_BOARD }}
         run: |
           BRANCH="${GITHUB_REF#refs/heads/}"
           OPEN_PR_COUNT=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
@@ -64,6 +67,23 @@ jobs:
             *) TITLE="$TICKET - $SUBJECT" ;;
           esac
 
-          BODY=$(git log --reverse --format='- %s' origin/main..HEAD)
+          # The body points at the Trello card rather than repeating the
+          # commit log, which the Commits tab already shows. Resolving the
+          # short URL needs the same board lookup the Trello action performs:
+          # the card number is the ticket without its SD- prefix.
+          CARD_URL=$(curl -fsS --get \
+            --data-urlencode "key=$TRELLO_KEY" \
+            --data-urlencode "token=$TRELLO_TOKEN" \
+            "https://trello.com/1/boards/$TRELLO_BOARD/cards/${TICKET#SD-}" \
+            | jq -r '.shortUrl // empty') || CARD_URL=""
+
+          if [ -n "$CARD_URL" ]; then
+            BODY="Trello card: [$TICKET]($CARD_URL)"
+          else
+            # A missing card must not block the PR, so fall back to the bare
+            # ticket. The Trello job reports the lookup failure separately.
+            echo "::warning::Could not resolve the Trello card for $TICKET."
+            BODY="Trello card: $TICKET (link could not be resolved)"
+          fi
 
           gh pr create --base main --head "$BRANCH" --title "$TITLE" --body "$BODY"
