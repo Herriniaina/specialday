@@ -24,6 +24,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # `gh pr create --fill` derives the title and body from the commits
+          # between base and head, so it needs origin/main and full history.
+          # The default depth of 1 only creates the pushed branch's tracking ref.
+          fetch-depth: 0
       - name: Create PR if none exists yet
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,5 +40,9 @@ jobs:
             exit 0
           fi
 
-          gh pr create --base main --head "$BRANCH" --fill \
-            || echo "Could not create a PR for $BRANCH (e.g. no commits ahead of main yet), skipping."
+          if [ "$(git rev-list --count origin/main..HEAD)" -eq 0 ]; then
+            echo "No commits ahead of main on $BRANCH, skipping."
+            exit 0
+          fi
+
+          gh pr create --base main --head "$BRANCH" --fill
