@@ -4,7 +4,9 @@
 set -euo pipefail
 
 PROTECTED_BRANCHES='^(main|master|develop)$'
-PATTERN='^(feat|fix|hotfix|junk|refacto)/[Ss][Dd]-[0-9]{4}'
+# Uppercase SD only: .github/workflows/auto-pr.yaml filters branches
+# case-sensitively, so a branch pushed as sd- silently gets no PR.
+PATTERN='^(feat|fix|hotfix|junk|refacto)/SD-[0-9]{4}'
 
 while read -r local_ref local_sha _remote_ref _remote_sha; do
     # Skip branch/tag deletions (local sha is all zeros).
@@ -31,7 +33,7 @@ while read -r local_ref local_sha _remote_ref _remote_sha; do
         echo "  hotfix/SD-XXXX-..." >&2
         echo "  junk/SD-XXXX-..." >&2
         echo "  refacto/SD-XXXX-..." >&2
-        echo "(XXXX = 4 digits)" >&2
+        echo "(XXXX = 4 digits, SD uppercase)" >&2
         exit 1
     fi
 done

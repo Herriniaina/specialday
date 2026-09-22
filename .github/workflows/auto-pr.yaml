@@ -3,12 +3,12 @@ name: Auto PR
 
 on:
   push:
+    # Uppercase only: trello-link.yaml matches SD- literally and
+    # case-sensitively against the branch name, and nothing downstream can
+    # rewrite a branch that was pushed as sd-.
     branches:
-      - 'fix/sd-*'
       - 'fix/SD-*'
-      - 'hotfix/sd-*'
       - 'hotfix/SD-*'
-      - 'feat/sd-*'
       - 'feat/SD-*'
 
 permissions:
@@ -24,9 +24,16 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # The PR title and body are built from the commits between base and
+          # head, so origin/main and full history are needed. The default depth
+          # of 1 only creates the pushed branch's tracking ref.
+          fetch-depth: 0
       - name: Create PR if none exists yet
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRELLO_KEY: ${{ secrets.TRELLO_KEY }}
+          TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
+          TRELLO_BOARD: ${{ secrets.TRELLO_BOARD }}
         run: |
           BRANCH="${GITHUB_REF#refs/heads/}"
           OPEN_PR_COUNT=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
@@ -36,5 +43,47 @@ jobs:
             exit 0
           fi
 
-          gh pr create --base main --head "$BRANCH" --fill \
-            || echo "Could not create a PR for $BRANCH (e.g. no commits ahead of main yet), skipping."
+          if [ "$(git rev-list --count origin/main..HEAD)" -eq 0 ]; then
+            echo "No commits ahead of main on $BRANCH, skipping."
+            exit 0
+          fi
+
+          TICKET=$(printf '%s' "$BRANCH" | grep -oiE 'sd-[0-9]+' | head -n1 | tr '[:lower:]' '[:upper:]')
+
+          if [ -z "$TICKET" ]; then
+            echo "::error::Branch $BRANCH carries no SD-<number>, so no Trello card can be linked."
+            exit 1
+          fi
+
+          # trello-link.yaml needs SD-<number> in the PR title *and* the branch
+          # name. Never let gh derive the title from the branch: it humanises
+          # the separators, turning SD-0029 into "SD 0029", which no longer
+          # matches. Build it from the first commit instead, and prepend the
+          # ticket when that subject does not already spell it out.
+          SUBJECT=$(git log --reverse --format=%s origin/main..HEAD | head -n1)
+
+          case "$SUBJECT" in
+            *"$TICKET"*) TITLE="$SUBJECT" ;;
+            *) TITLE="$TICKET - $SUBJECT" ;;
+          esac
+
+          # The body points at the Trello card rather than repeating the
+          # commit log, which the Commits tab already shows. Resolving the
+          # short URL needs the same board lookup the Trello action performs:
+          # the card number is the ticket without its SD- prefix.
+          CARD_URL=$(curl -fsS --get \
+            --data-urlencode "key=$TRELLO_KEY" \
+            --data-urlencode "token=$TRELLO_TOKEN" \
+            "https://trello.com/1/boards/$TRELLO_BOARD/cards/${TICKET#SD-}" \
+            | jq -r '.shortUrl // empty') || CARD_URL=""
+
+          if [ -n "$CARD_URL" ]; then
+            BODY="Trello card: [$TICKET]($CARD_URL)"
+          else
+            # A missing card must not block the PR, so fall back to the bare
+            # ticket. The Trello job reports the lookup failure separately.
+            echo "::warning::Could not resolve the Trello card for $TICKET."
+            BODY="Trello card: $TICKET (link could not be resolved)"
+          fi
+
+          gh pr create --base main --head "$BRANCH" --title "$TITLE" --body "$BODY"
