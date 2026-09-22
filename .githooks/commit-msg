@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Enforces the "<type>: #SD-XXXX - ..." commit message convention.
+# Installed via `core.hooksPath` (see .githooks/README.md).
+set -euo pipefail
+
+COMMIT_MSG_FILE="$1"
+FIRST_LINE="$(head -n1 "$COMMIT_MSG_FILE")"
+
+# Let merge/revert commits through untouched.
+if [[ "$FIRST_LINE" =~ ^(Merge|Revert) ]]; then
+    exit 0
+fi
+
+PATTERN='^(feat|fix|refacto): #[Ss][Dd]-[0-9]{4}'
+
+if [[ ! "$FIRST_LINE" =~ $PATTERN ]]; then
+    echo "Commit rejected: the message must start with one of:" >&2
+    echo "  feat: #SD-XXXX - ..." >&2
+    echo "  fix: #SD-XXXX - ..." >&2
+    echo "  refacto: #SD-XXXX - ..." >&2
+    echo "(XXXX = 4 digits)" >&2
+    echo >&2
+    echo "Got: $FIRST_LINE" >&2
+    exit 1
+fi

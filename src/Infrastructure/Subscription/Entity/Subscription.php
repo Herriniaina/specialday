@@ -43,7 +43,7 @@ class Subscription
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $endDate = null;
 
-    #[ORM\Column(length: 20, enumType: PaymentMethodEnum::class)]
+    #[ORM\Column(length: 20, enumType: PaymentMethodEnum::class, nullable: true)]
     private ?PaymentMethodEnum $paymentMethod = null;
 
     #[ORM\Column(length: 20, enumType: PaymentStatusEnum::class, options: ['default' => 'incomplete'])]
@@ -155,7 +155,7 @@ class Subscription
         return $this->paymentMethod;
     }
 
-    public function setPaymentMethod(PaymentMethodEnum $paymentMethod): static
+    public function setPaymentMethod(?PaymentMethodEnum $paymentMethod): static
     {
         $this->paymentMethod = $paymentMethod;
 

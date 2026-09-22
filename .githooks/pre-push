@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Enforces the "<type>/SD-XXXX-..." branch naming convention before push.
+# Installed via `core.hooksPath` (see .githooks/README.md).
+set -euo pipefail
+
+PROTECTED_BRANCHES='^(main|master|develop)$'
+PATTERN='^(feat|fix|hotfix|junk|refacto)/[Ss][Dd]-[0-9]{4}'
+
+while read -r local_ref local_sha _remote_ref _remote_sha; do
+    # Skip branch/tag deletions (local sha is all zeros).
+    if [[ "$local_sha" =~ ^0+$ ]]; then
+        continue
+    fi
+
+    # Only validate branch pushes, not tags.
+    if [[ "$local_ref" != refs/heads/* ]]; then
+        continue
+    fi
+
+    branch="${local_ref#refs/heads/}"
+
+    if [[ "$branch" =~ $PROTECTED_BRANCHES ]]; then
+        continue
+    fi
+
+    if [[ ! "$branch" =~ $PATTERN ]]; then
+        echo "Push rejected: branch name '$branch' does not match the required pattern." >&2
+        echo "Expected one of:" >&2
+        echo "  feat/SD-XXXX-..." >&2
+        echo "  fix/SD-XXXX-..." >&2
+        echo "  hotfix/SD-XXXX-..." >&2
+        echo "  junk/SD-XXXX-..." >&2
+        echo "  refacto/SD-XXXX-..." >&2
+        echo "(XXXX = 4 digits)" >&2
+        exit 1
+    fi
+done

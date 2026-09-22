@@ -255,8 +255,9 @@ only for contexts with **no domain port**, typically admin/CRUD-only entities.
 
 #### Querying — avoid N+1, select the minimum fields
 
-For read paths, never `select('s')` a full entity when the mapper only reads
-a few of its fields — that costs the same as `SELECT *`. Select just the
+For read paths returning **many rows** (lists, exports, reports), never
+`select('s')` a full entity when the mapper only reads a few of its fields —
+that costs the same as `SELECT *`, multiplied by every row. Select just the
 columns the domain model needs, hydrate as an array, and build the domain
 object straight from the row (skip the entity-accessor round-trip):
 
@@ -276,10 +277,26 @@ $row = $this->em->createQueryBuilder()
 Use `IDENTITY(s.assoc)` to pull a to-one association's raw FK instead of
 joining just to read its id.
 
-This doesn't apply to a write path that needs to mutate and `flush()` an
-entity (e.g. an increment method) — there you need the real, fully-hydrated
-entity so Doctrine's change tracking and lifecycle callbacks fire; full
-hydration there is correct, not a violation of this rule.
+For a **single-row lookup** (e.g. `findByCompanyId` returning one nullable
+domain object), the column-count/network savings above are negligible —
+selecting the full entity (+ its joined to-one associations) and mapping via
+its typed getters is fine, and PHPStan-friendlier than an array shape. See
+`SubscriptionRepository::findByCompanyId` for the pattern: `select('s', 'sp')`,
+object hydration, `assert($entity instanceof …)` to narrow past
+`getOneOrNullResult()`'s `mixed` return type, then map into the domain object.
+**Always `$this->em->detach($entity)` before returning** in this case — the
+entity would otherwise stay in the `EntityManager`'s identity map as
+*managed*. That's harmless in a short-lived HTTP request, but this app also
+runs a Messenger worker (long-lived process): a lingering managed entity
+grows worker memory over the process lifetime and can get written by an
+unrelated `flush()` elsewhere in the same message if something mutates it.
+Detaching keeps a read-only lookup side-effect-free.
+
+None of this applies to a write path that needs to mutate and `flush()` an
+entity (e.g. an increment method) — there you need the real, fully-hydrated,
+**managed** entity so Doctrine's change tracking and lifecycle callbacks
+fire; full hydration (without detaching) there is correct, not a violation
+of this rule.
 
 Watch for N+1: touching a lazy `ManyToOne`/`OneToOne` field other than its
 identifier (`getId()` is free — Doctrine already knows it from the FK column
@@ -373,6 +390,44 @@ no manual violation-collecting loop needed. Routes are attribute-based and
 auto-imported (`config/routes.yaml` → `routing.controllers`). No YAML route
 entry needed.
 
+### Testing — every new route needs unit tests
+
+A new endpoint is not done until it has tests. This codebase has no
+`WebTestCase`/functional HTTP tests — coverage comes from two unit-test
+files per route, mirroring `tests/Application/[Ctx]/` and
+`tests/Infrastructure/[Ctx]/Http/` (see `CreateCompanyTest`/
+`CreateCompanyInputTest`, `ListCompanyMediaFilesTest`, or
+`CreateSubscriptionTest`/`CreateSubscriptionInputTest`):
+
+1. **Use case test** — `tests/Application/[Ctx]/<UseCase>Test.php`, plain
+   `TestCase`. Mock every port the use case depends on with
+   `createMock(...)` (assert on calls with `expects(self::once())->method(...)
+   ->with(...)`) or `createStub(...)` for ports whose calls you don't need to
+   assert (see the `&MockObject` / `&Stub` property types in existing tests).
+   Cover: the happy path (correct data passed to `save`/`create`, correct
+   return value), and **every exception the use case can throw** — one test
+   per guard clause (not-found, already-exists, etc.), asserting the
+   short-circuited port method (e.g. `save`/`create`) is `expects(self::never())`.
+   PHPUnit's mock-expectation check is strict here: a `MockObject` stubbed
+   with only `->method(...)->willReturn(...)` and no `expects(...)` on any of
+   its methods raises a `PHPUnit Notice` ("No expectations were configured
+   for the mock") — always call it through `expects(self::once())` (or use
+   `createStub` if the test genuinely doesn't care how many times/with what
+   args it's called).
+2. **Input DTO validation test** — `tests/Infrastructure/[Ctx]/Http/<Input>Test.php`,
+   build a real `ValidatorInterface` via
+   `Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator()`
+   (no HTTP kernel needed). Cover: a fully valid input has zero violations,
+   defaulted/optional fields are valid when omitted, and each constraint
+   (`NotBlank`, `Uuid`, `Choice`, `Length`, …) is individually violated by a
+   bad value, asserting the violation's `message` matches the translation key
+   set on the attribute.
+
+Run `docker compose exec php php bin/phpunit <path>` (project has no bare
+`php`/`vendor/bin/phpunit` on the host — always go through the `php`
+container) and `docker compose exec php vendor/bin/phpstan analyse` before
+considering the route finished.
+
 ### EasyAdmin CRUD — `Infrastructure/Admin/Http/`
 
 `extends AbstractCrudController`, `getEntityFqcn()` returns the **Doctrine
@@ -412,6 +467,8 @@ entity** FQCN, fields configured in `configureFields()`. Register it in
 4. **Event listener**: needs an explicit service definition with
    `kernel.event_listener` tags in `config/services.yaml` (see
    `AcceptLanguageLocaleListener`).
+5. **Tests**: every new route ships with its use-case test and Input DTO
+   validation test — see Testing above. A route without tests isn't finished.
 
 ---
 
