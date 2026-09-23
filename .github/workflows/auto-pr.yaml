@@ -10,6 +10,7 @@ on:
       - 'fix/SD-*'
       - 'hotfix/SD-*'
       - 'feat/SD-*'
+      - 'refacto/SD-*'
 
 permissions:
   contents: read
