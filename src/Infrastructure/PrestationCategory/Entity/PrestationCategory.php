@@ -2,18 +2,18 @@
 
 namespace App\Infrastructure\PrestationCategory\Entity;
 
-use App\Infrastructure\PrestationCategory\Repository\PrestationCategoryRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Doctrine\UuidV7Generator;
+use Ramsey\Uuid\UuidInterface;
 
-#[ORM\Entity(repositoryClass: PrestationCategoryRepository::class)]
+#[ORM\Entity]
 class PrestationCategory
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: UuidV7Generator::class)]
-    private ?string $id = null;
+    private ?UuidInterface $id = null;
 
     #[ORM\Column(length: 255)]
     private ?string $title = null;
@@ -21,7 +21,7 @@ class PrestationCategory
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $description = null;
 
-    public function getId(): ?string
+    public function getId(): ?UuidInterface
     {
         return $this->id;
     }

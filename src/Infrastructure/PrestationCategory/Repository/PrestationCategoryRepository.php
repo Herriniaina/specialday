@@ -2,17 +2,20 @@
 
 namespace App\Infrastructure\PrestationCategory\Repository;
 
-use App\Infrastructure\PrestationCategory\Entity\PrestationCategory;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
+use App\Domain\PrestationCategory\PrestationCategoryRepositoryInterface;
+use App\Infrastructure\PrestationCategory\Entity\PrestationCategory as PrestationCategoryEntity;
+use Doctrine\ORM\EntityManagerInterface;
+use Ramsey\Uuid\Uuid;
 
-/**
- * @extends ServiceEntityRepository<PrestationCategory>
- */
-class PrestationCategoryRepository extends ServiceEntityRepository
+class PrestationCategoryRepository implements PrestationCategoryRepositoryInterface
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(private EntityManagerInterface $em)
     {
-        parent::__construct($registry, PrestationCategory::class);
+    }
+
+    #[\Override]
+    public function existsById(string $id): bool
+    {
+        return null !== $this->em->find(PrestationCategoryEntity::class, Uuid::fromString($id));
     }
 }

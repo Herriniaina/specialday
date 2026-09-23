@@ -37,10 +37,9 @@
             <file>src/Kernel.php</file>
             <!-- EasyAdmin CRUD/dashboard scaffolding: declarative field config, no branching logic -->
             <directory>src/Infrastructure/Admin</directory>
-            <!-- Empty ServiceEntityRepository subclass, no custom methods -->
-            <file>src/Infrastructure/PrestationCategory/Repository/PrestationCategoryRepository.php</file>
             <!-- Doctrine entities that are pure getters/setters (ORM mapping only, no logic) -->
             <file>src/Infrastructure/PrestationCategory/Entity/PrestationCategory.php</file>
+            <file>src/Infrastructure/Prestation/Entity/Prestation.php</file>
             <file>src/Infrastructure/Company/Entity/Company.php</file>
             <file>src/Infrastructure/Media/Entity/MediaFile.php</file>
             <file>src/Infrastructure/Subscription/Entity/Subscription.php</file>

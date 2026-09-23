@@ -40,6 +40,12 @@ services:
     App\Domain\Company\CompanyRepositoryInterface:
         alias: App\Infrastructure\Company\Repository\CompanyRepository
 
+    App\Domain\Prestation\PrestationRepositoryInterface:
+        alias: App\Infrastructure\Prestation\Repository\PrestationRepository
+
+    App\Domain\PrestationCategory\PrestationCategoryRepositoryInterface:
+        alias: App\Infrastructure\PrestationCategory\Repository\PrestationCategoryRepository
+
     App\Application\User\UserNotifierInterface:
         alias: App\Infrastructure\User\Notifier\MessengerUserNotifier
 
