@@ -35,7 +35,7 @@ class SubscriptionCrudController extends AbstractCrudController
                     'Stripe' => PaymentMethodEnum::STRIPE,
                     'Mobile Money' => PaymentMethodEnum::MOBILE_MONEY,
                 ])
-                ->setRequired(true),
+                ->setRequired(false),
             ChoiceField::new('paymentStatus', 'Statut du paiement')
                 ->setChoices([
                     'Incomplet' => PaymentStatusEnum::INCOMPLETE,
@@ -46,8 +46,9 @@ class SubscriptionCrudController extends AbstractCrudController
                     'Impayé' => PaymentStatusEnum::UNPAID,
                     'Remboursé' => PaymentStatusEnum::REFUNDED,
                     'Annulé' => PaymentStatusEnum::VOIDED,
+                    'Non requis' => PaymentStatusEnum::NOT_REQUIRED,
                 ])
-                ->setRequired(true),
+                ->setRequired(false),
         ];
     }
 }

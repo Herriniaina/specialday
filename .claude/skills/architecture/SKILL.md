@@ -15,7 +15,7 @@ description: >-
 
 Everything application code lives in `src/`, PSR-4 root `App\` → `src/`
 (`composer.json`). Three layers, each split by **bounded context** (`User`,
-`Category`,…).
+`PrestationCategory`,…).
 
 | Layer | Path | May depend on | MUST NOT import |
 |---|---|---|---|
@@ -59,7 +59,7 @@ knows nothing about the outside.
 | HTTP controller (API) | `src/Infrastructure/[Ctx]/Http/` | `App\Infrastructure\[Ctx]\Http` | `Infrastructure/User/Http/RegisterUserController.php` |
 | Security adapter | `src/Infrastructure/[Ctx]/Security/` | `App\Infrastructure\[Ctx]\Security` | `Infrastructure/User/Security/SymfonyPasswordHasher.php` |
 | Shared HTTP base / listeners | `src/Infrastructure/Shared/Http/` | `App\Infrastructure\Shared\Http` | `ApiAbstractController.php`, `EventListeners/…` |
-| EasyAdmin CRUD / dashboard | `src/Infrastructure/Admin/Http/` | `App\Infrastructure\Admin\Http` | `Infrastructure/Admin/Http/CategoryCrudController.php` |
+| EasyAdmin CRUD / dashboard | `src/Infrastructure/Admin/Http/` | `App\Infrastructure\Admin\Http` | `Infrastructure/Admin/Http/PrestationCategoryCrudController.php` |
 
 > `src/Controller/` still exists from the Symfony skeleton but is **empty and
 > unused** — do not add controllers there.

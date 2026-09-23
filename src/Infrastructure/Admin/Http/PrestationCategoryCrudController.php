@@ -2,20 +2,20 @@
 
 namespace App\Infrastructure\Admin\Http;
 
-use App\Infrastructure\Category\Entity\Category;
+use App\Infrastructure\PrestationCategory\Entity\PrestationCategory;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
 /**
- * @extends AbstractCrudController<Category>
+ * @extends AbstractCrudController<PrestationCategory>
  */
-class CategoryCrudController extends AbstractCrudController
+class PrestationCategoryCrudController extends AbstractCrudController
 {
     public static function getEntityFqcn(): string
     {
-        return Category::class;
+        return PrestationCategory::class;
     }
 
     public function configureFields(string $pageName): iterable

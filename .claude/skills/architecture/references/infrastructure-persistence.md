@@ -77,7 +77,7 @@ class BookingRepository implements BookingRepositoryInterface
 }
 ```
 
-**Skeleton style — `extends ServiceEntityRepository`** (as in `CategoryRepository`):
+**Skeleton style — `extends ServiceEntityRepository`** (as in `PrestationCategoryRepository`):
 only for contexts with **no domain port**, typically admin/CRUD-only entities.
 
 ### Querying — avoid N+1, select the minimum fields
