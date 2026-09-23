@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
       - name: Create PR if none exists yet
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PR_TOKEN || secrets.GITHUB_TOKEN }}
           TRELLO_KEY: ${{ secrets.TRELLO_KEY }}
           TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
           TRELLO_BOARD: ${{ secrets.TRELLO_BOARD }}
