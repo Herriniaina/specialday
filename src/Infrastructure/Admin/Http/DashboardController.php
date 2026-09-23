@@ -18,7 +18,7 @@ class DashboardController extends AbstractDashboardController
 
     public function index(): Response
     {
-        $url = $this->adminUrlGenerator->setController(CategoryCrudController::class)
+        $url = $this->adminUrlGenerator->setController(PrestationCategoryCrudController::class)
             ->setAction('index')
             ->generateUrl();
 
@@ -34,7 +34,7 @@ class DashboardController extends AbstractDashboardController
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
-        yield MenuItem::linkTo(CategoryCrudController::class, 'Préstations', 'fas fa-list');
+        yield MenuItem::linkTo(PrestationCategoryCrudController::class, 'Préstations', 'fas fa-list');
         yield MenuItem::linkTo(UserCrudController::class, 'Utilisateurs', 'fas fa-users');
         yield MenuItem::linkTo(CompanyCrudController::class, 'Company', 'fas fa-building');
         yield MenuItem::linkTo(SubscriptionCrudController::class, 'Abonnements', 'fas fa-credit-card');

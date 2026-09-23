@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Infrastructure\Category\Entity;
+namespace App\Infrastructure\PrestationCategory\Entity;
 
-use App\Infrastructure\Category\Repository\CategoryRepository;
+use App\Infrastructure\PrestationCategory\Repository\PrestationCategoryRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Doctrine\UuidV7Generator;
 
-#[ORM\Entity(repositoryClass: CategoryRepository::class)]
-class Category
+#[ORM\Entity(repositoryClass: PrestationCategoryRepository::class)]
+class PrestationCategory
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]

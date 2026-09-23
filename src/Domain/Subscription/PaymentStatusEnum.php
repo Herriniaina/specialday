@@ -16,4 +16,5 @@ enum PaymentStatusEnum: string
     case UNPAID = 'unpaid';
     case REFUNDED = 'refunded';
     case VOIDED = 'voided';
+    case NOT_REQUIRED = 'not_required';
 }
