@@ -31,6 +31,11 @@ company:
         too_long: "Facebook profile cannot be longer than {{ limit }} characters."
     youtube_profile:
         too_long: "Youtube profile cannot be longer than {{ limit }} characters."
+    list:
+        page:
+            positive: "Page must be greater than 0."
+        limit:
+            range: "Limit must be between {{ min }} and {{ max }}."
 prestation:
     prestation_category_id:
         not_blank: "Prestation category is required."
