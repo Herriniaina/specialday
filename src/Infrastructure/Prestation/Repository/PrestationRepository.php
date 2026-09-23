@@ -36,6 +36,7 @@ class PrestationRepository implements PrestationRepositoryInterface
             ->setPriceTaxIncluded($prestation->price->taxIncluded)
             ->setQuantity($prestation->quantity)
             ->setUnit($prestation->unit)
+            ->setNotes($prestation->notes)
             ->setCreatedAt($prestation->createdAt);
 
         $this->em->persist($entity);

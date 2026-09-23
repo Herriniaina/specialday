@@ -45,6 +45,7 @@ class CreatePrestationTest extends TestCase
             taxIncluded: true,
             quantity: 1,
             unit: 'photo',
+            notes: 'Bring extra lenses.',
         );
 
         $this->prestationCategoryRepository->expects(self::once())
@@ -63,6 +64,7 @@ class CreatePrestationTest extends TestCase
                 self::assertTrue($prestation->price->taxIncluded);
                 self::assertSame(1, $prestation->quantity);
                 self::assertSame('photo', $prestation->unit);
+                self::assertSame('Bring extra lenses.', $prestation->notes);
 
                 return true;
             }));
@@ -70,6 +72,25 @@ class CreatePrestationTest extends TestCase
         $prestation = $this->createPrestation->execute($request);
 
         self::assertSame('generated-id', $prestation->getId());
+    }
+
+    public function testExecuteCreatesPrestationWithNullNotesWhenNotProvided(): void
+    {
+        $request = new CreatePrestationRequest(
+            companyId: 'company-id',
+            prestationCategoryId: 'category-id',
+            amount: 1000,
+            currency: 'Ar',
+            taxIncluded: true,
+            quantity: 1,
+            unit: 'photo',
+        );
+
+        $this->prestationCategoryRepository->method('existsById')->willReturn(true);
+
+        $prestation = $this->createPrestation->execute($request);
+
+        self::assertNull($prestation->notes);
     }
 
     public function testExecuteThrowsWhenPrestationCategoryDoesNotExist(): void

@@ -23,6 +23,8 @@ readonly class CreatePrestationInput
         #[Assert\NotBlank(message: 'prestation.unit.not_blank')]
         #[Assert\Length(max: 50, maxMessage: 'prestation.unit.too_long')]
         public string $unit = '',
+
+        public ?string $notes = null,
     ) {
     }
 }

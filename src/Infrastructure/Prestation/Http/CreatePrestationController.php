@@ -40,6 +40,7 @@ final class CreatePrestationController extends ApiAbstractController
                 taxIncluded: (bool) $input->price->taxIncluded,
                 quantity: (int) $input->quantity,
                 unit: $input->unit,
+                notes: $input->notes,
             ));
         } catch (PrestationCategoryNotFoundException $e) {
             return $this->notFound($e->getMessage());

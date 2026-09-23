@@ -12,6 +12,7 @@ readonly class CreatePrestationRequest
         public bool $taxIncluded,
         public int $quantity,
         public string $unit,
+        public ?string $notes = null,
     ) {
     }
 }

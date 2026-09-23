@@ -48,6 +48,32 @@ class CreatePrestationInputTest extends TestCase
         self::assertCount(0, $this->validator->validate($this->validInput()));
     }
 
+    public function testAValidInputWithNotesHasNoViolations(): void
+    {
+        $input = new CreatePrestationInput(
+            prestationCategoryId: '01930f2e-6a3b-7c3e-9f3a-000000000001',
+            price: new PriceInput(amount: 1000, currency: 'Ar', taxIncluded: true),
+            quantity: 1,
+            unit: 'photo',
+            notes: 'Bring extra lenses.',
+        );
+
+        self::assertCount(0, $this->validator->validate($input));
+    }
+
+    public function testANullNotesIsAllowed(): void
+    {
+        $input = new CreatePrestationInput(
+            prestationCategoryId: '01930f2e-6a3b-7c3e-9f3a-000000000001',
+            price: new PriceInput(amount: 1000, currency: 'Ar', taxIncluded: true),
+            quantity: 1,
+            unit: 'photo',
+            notes: null,
+        );
+
+        self::assertCount(0, $this->validator->validate($input));
+    }
+
     public function testABlankPrestationCategoryIdIsRejected(): void
     {
         $input = new CreatePrestationInput(
