@@ -31,3 +31,22 @@ company:
         too_long: "Facebook profile cannot be longer than {{ limit }} characters."
     youtube_profile:
         too_long: "Youtube profile cannot be longer than {{ limit }} characters."
+prestation:
+    prestation_category_id:
+        not_blank: "Prestation category is required."
+        invalid: "Prestation category id is not a valid identifier."
+    quantity:
+        not_blank: "Quantity is required."
+        positive: "Quantity must be greater than 0."
+    unit:
+        not_blank: "Unit is required."
+        too_long: "Unit cannot be longer than {{ limit }} characters."
+    price:
+        amount:
+            not_blank: "Price amount is required."
+            positive_or_zero: "Price amount cannot be negative."
+        currency:
+            not_blank: "Price currency is required."
+            too_long: "Price currency cannot be longer than {{ limit }} characters."
+        tax_included:
+            not_blank: "Price tax_included flag is required."

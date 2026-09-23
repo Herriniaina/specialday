@@ -11,7 +11,7 @@ SYMFONY  = $(PHP) bin/console
 
 # Misc
 .DEFAULT_GOAL = help
-.PHONY        : help build up start down logs sh composer vendor sf cc test xdebug xdebug-off
+.PHONY        : help build up start down logs sh bash composer vendor sf cc test xdebug xdebug-off phpstan cs-check cs-fix qa
 
 ## —— 🎵 🐳 The Symfony Docker Makefile 🐳 🎵 ——————————————————————————————————
 help: ## Outputs this help screen
@@ -48,6 +48,19 @@ xdebug: ## Enable Xdebug step debugging on the PHP container
 xdebug-off: ## Disable Xdebug step debugging on the PHP container
 	@$(DOCKER_COMP) up -d --no-deps php
 
+
+## —— Quality ✅ ——————————————————————————————————————————————————————————————
+phpstan: ## Run PHPStan static analysis, pass the parameter "c=" to add options, example: make phpstan c="--level=max"
+	@$(eval c ?=)
+	@$(PHP) vendor/bin/phpstan analyse --no-progress $(c)
+
+cs-check: ## Check coding standards with PHP-CS-Fixer without modifying files (dry-run)
+	@$(PHP) vendor/bin/php-cs-fixer fix --dry-run --diff
+
+cs-fix: ## Fix coding standards with PHP-CS-Fixer
+	@$(PHP) vendor/bin/php-cs-fixer fix
+
+qa: cs-check phpstan test ## Run PHP-CS-Fixer (dry-run), PHPStan and PHPUnit
 
 ## —— Composer 🧙 ——————————————————————————————————————————————————————————————
 composer: ## Run composer, pass the parameter "c=" to run a given command, example: make composer c='req symfony/orm-pack'

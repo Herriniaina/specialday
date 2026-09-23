@@ -13,3 +13,15 @@ Symfony application running on FrankenPHP via Docker.
 5. `docker compose down --remove-orphans` to stop
 6. `make xdebug` to recreate the container php on debug mode on
 6. `make xdebug-off` for launching the container php on debug mode off
+
+## Quality
+
+All commands run inside the `php` container (start it first with `make up`):
+
+| Command         | Description                                                          |
+|-----------------|----------------------------------------------------------------------|
+| `make phpstan`  | Run PHPStan static analysis (`c="..."` to add options)               |
+| `make cs-check` | Check coding standards with PHP-CS-Fixer (dry-run, shows the diff)   |
+| `make cs-fix`   | Fix coding standards with PHP-CS-Fixer                               |
+| `make test`     | Run PHPUnit (`c="..."` to add options, e.g. `c="--stop-on-failure"`) |
+| `make qa`       | Run `cs-check`, `phpstan` and `test` in sequence                     |

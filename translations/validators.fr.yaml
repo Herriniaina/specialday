@@ -31,3 +31,22 @@ company:
         too_long: "Le profil Facebook ne peut pas dépasser {{ limit }} caractères."
     youtube_profile:
         too_long: "Le profil Youtube ne peut pas dépasser {{ limit }} caractères."
+prestation:
+    prestation_category_id:
+        not_blank: "La catégorie de prestation est obligatoire."
+        invalid: "L'identifiant de la catégorie de prestation n'est pas valide."
+    quantity:
+        not_blank: "La quantité est obligatoire."
+        positive: "La quantité doit être supérieure à 0."
+    unit:
+        not_blank: "L'unité est obligatoire."
+        too_long: "L'unité ne peut pas dépasser {{ limit }} caractères."
+    price:
+        amount:
+            not_blank: "Le montant du prix est obligatoire."
+            positive_or_zero: "Le montant du prix ne peut pas être négatif."
+        currency:
+            not_blank: "La devise du prix est obligatoire."
+            too_long: "La devise du prix ne peut pas dépasser {{ limit }} caractères."
+        tax_included:
+            not_blank: "L'indicateur tax_included est obligatoire."
