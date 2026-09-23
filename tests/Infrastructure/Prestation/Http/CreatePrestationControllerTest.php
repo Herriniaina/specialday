@@ -44,6 +44,7 @@ class CreatePrestationControllerTest extends TestCase
             price: new PriceInput(amount: 1000, currency: 'Ar', taxIncluded: true),
             quantity: 1,
             unit: 'photo',
+            notes: 'Bring extra lenses.',
         );
     }
 
@@ -107,5 +108,6 @@ class CreatePrestationControllerTest extends TestCase
         self::assertSame(['id' => 'generated-id'], $this->body($response)['payload']);
         self::assertInstanceOf(Prestation::class, $saved);
         self::assertSame('company-id', $saved->companyId);
+        self::assertSame('Bring extra lenses.', $saved->notes);
     }
 }

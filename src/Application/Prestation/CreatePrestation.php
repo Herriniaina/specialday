@@ -31,6 +31,7 @@ class CreatePrestation
             quantity: $request->quantity,
             unit: $request->unit,
             createdAt: new \DateTimeImmutable(),
+            notes: $request->notes,
             id: $this->idGenerator->generate(),
         );
 

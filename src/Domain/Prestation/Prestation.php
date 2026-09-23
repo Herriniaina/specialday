@@ -13,6 +13,7 @@ class Prestation
         public int $quantity,
         public string $unit,
         public \DateTimeImmutable $createdAt,
+        public ?string $notes = null,
         public ?string $id = null,
     ) {
     }
