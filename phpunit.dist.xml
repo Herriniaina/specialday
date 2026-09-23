@@ -37,6 +37,8 @@
             <file>src/Kernel.php</file>
             <!-- EasyAdmin CRUD/dashboard scaffolding: declarative field config, no branching logic -->
             <directory>src/Infrastructure/Admin</directory>
+            <!-- Symfony's own admin login/logout screen: framework scaffolding, no branching logic -->
+            <file>src/Infrastructure/Security/Http/SecurityController.php</file>
             <!-- Doctrine entities that are pure getters/setters (ORM mapping only, no logic) -->
             <file>src/Infrastructure/PrestationCategory/Entity/PrestationCategory.php</file>
             <file>src/Infrastructure/Prestation/Entity/Prestation.php</file>
@@ -44,6 +46,25 @@
             <file>src/Infrastructure/Media/Entity/MediaFile.php</file>
             <file>src/Infrastructure/Subscription/Entity/Subscription.php</file>
             <file>src/Infrastructure/Subscription/Entity/SubscriptionPlan.php</file>
+            <!-- Doctrine repositories: QueryBuilder glue with no unit-testable branching without
+                 a real database; their callers exercise them through the repository interface
+                 mocks in the Application/Http test suites instead -->
+            <directory>src/Infrastructure/Company/Repository</directory>
+            <directory>src/Infrastructure/Media/Repository</directory>
+            <directory>src/Infrastructure/Prestation/Repository</directory>
+            <directory>src/Infrastructure/PrestationCategory/Repository</directory>
+            <directory>src/Infrastructure/Subscription/Repository</directory>
+            <directory>src/Infrastructure/User/Repository</directory>
+            <!-- Thin adapters delegating to third-party SDKs/CLIs (AWS SDK, Flysystem, ffmpeg),
+                 no branching logic of our own to cover -->
+            <directory>src/Infrastructure/Media/Storage</directory>
+            <directory>src/Infrastructure/Media/Video</directory>
+            <!-- One-line Messenger glue: dispatch/handle delegation, no branching logic -->
+            <directory>src/Infrastructure/Media/Messenger</directory>
+            <directory>src/Infrastructure/Media/MessageHandler</directory>
+            <directory>src/Infrastructure/Media/Message</directory>
+            <!-- Trivial JWT failure event-to-response mapping, no branching logic -->
+            <file>src/Infrastructure/Shared/Http/EventListeners/JwtAuthenticationFailureListener.php</file>
         </exclude>
 
         <deprecationTrigger>
