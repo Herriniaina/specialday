@@ -14,46 +14,23 @@
                     <div class="text-center mb-4">
                         <div class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary text-white fw-bold shadow-sm mb-3" style="width: 3rem; height: 3rem;">SD</div>
                         <h1 class="h3 fw-semibold text-dark mb-2">Specialday Admin</h1>
-                        <p class="text-secondary mb-0">Sign in to manage your website</p>
+                        <p class="text-secondary mb-0">Back-office</p>
                     </div>
 
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-4 p-sm-5">
-                            {% if error %}
-                                <div class="alert alert-danger small" role="alert">
-                                    {{ error.messageKey|trans(error.messageData, 'security') }}
-                                </div>
-                            {% endif %}
-
-                            {% if app.user %}
-                                <div class="alert alert-success small">
-                                    You are logged in as {{ app.user.userIdentifier }}.
-                                    <a class="alert-link" href="{{ logout_path() }}">Log out</a>
-                                </div>
-                            {% endif %}
-
                             <div class="mb-4">
-                                <h2 class="h5 fw-semibold text-dark mb-1">Welcome back</h2>
-                                <p class="small text-secondary mb-0">Use your administrator credentials to continue.</p>
+                                <h2 class="h5 fw-semibold text-dark mb-1">Connexion impossible</h2>
+                                <p class="small text-secondary mb-0">La connexion passe par Keycloak.</p>
                             </div>
 
-                            <form method="post">
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold" for="username">Email address</label>
-                                    <input type="email" value="{{ last_username }}" name="_username" id="username" class="form-control" autocomplete="email" required autofocus>
-                                </div>
+                            <div class="alert alert-danger small" role="alert">
+                                {{ error.messageKey|trans(error.messageData, 'security') }}
+                            </div>
 
-                                <div class="mb-4">
-                                    <label class="form-label small fw-semibold" for="password">Password</label>
-                                    <input type="password" name="_password" id="password" class="form-control" autocomplete="current-password" required>
-                                </div>
-
-                                <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
-
-                                <button class="btn btn-primary w-100 fw-semibold" type="submit">
-                                    Sign in to admin
-                                </button>
-                            </form>
+                            <a class="btn btn-primary w-100 fw-semibold" href="{{ path('app_login') }}">
+                                Réessayer
+                            </a>
                         </div>
                     </div>
 

@@ -7,7 +7,7 @@ services:
       context: .
       target: frankenphp_dev
     depends_on:
-      minio-init:
+      seaweedfs-init:
         condition: service_completed_successfully
     volumes:
       - ./:/app
@@ -60,44 +60,115 @@ services:
 ###< symfony/mailer ###
 
 ###> league/flysystem-async-aws-s3 ###
-  # S3-compatible local storage for media uploads. Web console: http://localhost:9001
-  minio:
-    # Docker Hub blocks anonymous pulls of minio/minio; quay.io is MinIO's own public mirror.
-    image: quay.io/minio/minio
+  # S3-compatible local storage for media uploads (SeaweedFS: MinIO's open-source edition is
+  # archived and its images are no longer publicly pullable). S3 API: http://localhost:8333.
+  seaweedfs:
+    image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-4.48}
     restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${AWS_S3_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${AWS_S3_SECRET_ACCESS_KEY:-minioadmin}
+    # S3 identities: the app's key pair, plus anonymous read access to the public bucket.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/seaweedfs-s3.json <<'EOF'
+        {"identities": [
+          {"name": "app", "credentials": [{"accessKey": "${AWS_S3_ACCESS_KEY_ID:-devaccesskey}", "secretKey": "${AWS_S3_SECRET_ACCESS_KEY:-devsecretkey}"}],
+           "actions": ["Admin", "Read", "List", "Tagging", "Write"]},
+          {"name": "anonymous", "actions": ["Read:${AWS_S3_PUBLIC_BUCKET:-specialday-public}"]}
+        ]}
+        EOF
+        exec /entrypoint.sh mini -dir=/data -s3.config=/etc/seaweedfs-s3.json \
+          -s3.autoCreateBucket=false -webdav=false -admin.ui=false
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "8333:8333"
     volumes:
-      - minio_data:/data
+      - seaweedfs_data:/data
 
-  # One-shot: creates the app's buckets on startup, then exits.
-  minio-init:
-    image: quay.io/minio/mc
+  # One-shot: creates the app's buckets, then exits. Not done by "weed mini -bucket=…", which tries
+  # once, before its own filer is up. "weed shell" exits 0 even on failure, hence the check of each
+  # bucket's /buckets/<name> directory on the filer (internal port 8888, not published).
+  seaweedfs-init:
+    image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-4.48}
     depends_on:
-      minio:
+      seaweedfs:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 ${AWS_S3_ACCESS_KEY_ID:-minioadmin} ${AWS_S3_SECRET_ACCESS_KEY:-minioadmin} &&
-      mc mb --ignore-existing local/${AWS_S3_BUCKET:-specialday} &&
-      mc mb --ignore-existing local/${AWS_S3_PUBLIC_BUCKET:-specialday-public} &&
-      mc anonymous set download local/${AWS_S3_PUBLIC_BUCKET:-specialday-public}
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        for bucket in ${AWS_S3_BUCKET:-specialday} ${AWS_S3_PUBLIC_BUCKET:-specialday-public}; do
+          attempts=0
+          until wget -q -O /dev/null "http://seaweedfs:8888/buckets/$$bucket/" 2>/dev/null; do
+            attempts=$$((attempts + 1))
+            [ "$$attempts" -le 60 ] || { echo "Could not create bucket $$bucket" >&2; exit 1; }
+            echo "s3.bucket.create -name $$bucket" | weed shell -master=seaweedfs:9333 -filer=seaweedfs:8888 >/dev/null 2>&1
+            sleep 1
+          done
+          echo "Bucket $$bucket ready"
+        done
 ###< league/flysystem-async-aws-s3 ###
 
   imagor:
     ports:
       - "8000:8000"
 
+###> keycloak ###
+  # Identity provider (OIDC). Console: http://localhost:8080 (admin / admin).
+  # The "specialday" realm is imported from keycloak/import on first start only: an existing
+  # realm is never overwritten (delete it in the console, or remove the keycloak_data volume, to re-import).
+  # Storage is start-dev's embedded H2 file database (keycloak_data volume), not MySQL: Keycloak's
+  # schema migration is hundreds of DDL statements, which take hours on MySQL over a WSL Docker disk.
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.4}
+    # Fails fast when a client secret is missing: Keycloak would otherwise import the
+    # "${KEYCLOAK_..._CLIENT_SECRET}" placeholder of the realm file literally as the secret.
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        : "$${KEYCLOAK_ADMIN_CLIENT_SECRET:?is not set, define it in .env.local}"
+        : "$${KEYCLOAK_API_CLIENT_SECRET:?is not set, define it in .env.local}"
+        exec /opt/keycloak/bin/kc.sh "$$@"
+      - kc.sh
+    command: start-dev --import-realm
+    restart: unless-stopped
+    # Client secrets referenced by keycloak/import/specialday-realm.json (KEYCLOAK_*_CLIENT_SECRET),
+    # kept out of git; the same variables configure the Symfony side.
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # Browser reaches Keycloak at localhost:8080, the php container at keycloak:8080. Pinning the
+      # public URL keeps the token "iss" claim identical for both; backchannel requests (JWKS,
+      # token, admin API) from other containers may still use the internal hostname.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    healthcheck:
+      # The image ships neither curl nor wget: query the management port (9000, not published)
+      # through bash's /dev/tcp.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      # First start builds Quarkus and creates the schema: several minutes on WSL.
+      start_period: 300s
+    ports:
+      - "8080:8080"
+    volumes:
+      # Whole data dir (H2 files under h2/): mounting the image's existing directory keeps its
+      # keycloak-user ownership, a fresh h2/ mount point would be root-owned and unwritable.
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+###< keycloak ###
+
 volumes:
-  minio_data:
+  seaweedfs_data:
+  keycloak_data:
