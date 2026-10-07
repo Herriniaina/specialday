@@ -39,6 +39,14 @@ jobs:
             *.cache-from=type=gha,scope=${{github.ref}}
             *.cache-from=type=gha,scope=refs/heads/main
             *.cache-to=type=gha,scope=${{github.ref}},mode=max
+      # Keycloak refuses to start without its client secrets (see compose.override.yaml), which
+      # live in the untracked .env.local: generate throwaway ones for this run.
+      - name: Generate Keycloak client secrets
+        run: |
+          {
+            echo "KEYCLOAK_ADMIN_CLIENT_SECRET=$(openssl rand -hex 32)"
+            echo "KEYCLOAK_API_CLIENT_SECRET=$(openssl rand -hex 32)"
+          } > .env.local
       - name: Start services
         run: docker compose up --wait --no-build
       - name: Check HTTP reachability

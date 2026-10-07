@@ -89,7 +89,7 @@ services:
                 pathStyleEndpoint: '%env(bool:AWS_S3_PATH_STYLE_ENDPOINT)%'
 
     # Dedicated S3 client for presigned video upload URLs handed to the browser. In dev
-    # AWS_S3_ENDPOINT is the Docker-internal "http://minio:9000" (unusable from a real browser)
+    # AWS_S3_ENDPOINT is the Docker-internal "http://seaweedfs:8333" (unusable from a real browser)
     # while AWS_S3_PUBLIC_ENDPOINT is the host-reachable equivalent. In prod both are the same
     # (empty = default AWS endpoint).
     media.presign_s3_client:
