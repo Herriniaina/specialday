@@ -37,7 +37,7 @@
             <file>src/Kernel.php</file>
             <!-- EasyAdmin CRUD/dashboard scaffolding: declarative field config, no branching logic -->
             <directory>src/Infrastructure/Admin</directory>
-            <!-- Symfony's own admin login/logout screen: framework scaffolding, no branching logic -->
+            <!-- Admin login/logout routes: thin glue over KeycloakAuthenticator, which carries the logic -->
             <file>src/Infrastructure/Security/Http/SecurityController.php</file>
             <!-- Doctrine entities that are pure getters/setters (ORM mapping only, no logic) -->
             <file>src/Infrastructure/PrestationCategory/Entity/PrestationCategory.php</file>

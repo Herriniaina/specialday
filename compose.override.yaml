@@ -99,5 +99,58 @@ services:
     ports:
       - "8000:8000"
 
+###> keycloak ###
+  # Identity provider (OIDC). Console: http://localhost:8080 (admin / admin).
+  # The "specialday" realm is imported from keycloak/import on first start only: an existing
+  # realm is never overwritten (delete it in the console, or remove the keycloak_data volume, to re-import).
+  # Storage is start-dev's embedded H2 file database (keycloak_data volume), not MySQL: Keycloak's
+  # schema migration is hundreds of DDL statements, which take hours on MySQL over a WSL Docker disk.
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.4}
+    # Fails fast when a client secret is missing: Keycloak would otherwise import the
+    # "${KEYCLOAK_..._CLIENT_SECRET}" placeholder of the realm file literally as the secret.
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        : "$${KEYCLOAK_ADMIN_CLIENT_SECRET:?is not set, define it in .env.local}"
+        : "$${KEYCLOAK_API_CLIENT_SECRET:?is not set, define it in .env.local}"
+        exec /opt/keycloak/bin/kc.sh "$$@"
+      - kc.sh
+    command: start-dev --import-realm
+    restart: unless-stopped
+    # Client secrets referenced by keycloak/import/specialday-realm.json (KEYCLOAK_*_CLIENT_SECRET),
+    # kept out of git; the same variables configure the Symfony side.
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # Browser reaches Keycloak at localhost:8080, the php container at keycloak:8080. Pinning the
+      # public URL keeps the token "iss" claim identical for both; backchannel requests (JWKS,
+      # token, admin API) from other containers may still use the internal hostname.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    healthcheck:
+      # The image ships neither curl nor wget: query the management port (9000, not published)
+      # through bash's /dev/tcp.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      # First start builds Quarkus and creates the schema: several minutes on WSL.
+      start_period: 300s
+    ports:
+      - "8080:8080"
+    volumes:
+      # Whole data dir (H2 files under h2/): mounting the image's existing directory keeps its
+      # keycloak-user ownership, a fresh h2/ mount point would be root-owned and unwritable.
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+###< keycloak ###
+
 volumes:
   minio_data:
+  keycloak_data:

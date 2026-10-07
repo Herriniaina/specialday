@@ -34,6 +34,18 @@ services:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_invalid, method: onJwtInvalid }
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_expired, method: onJwtExpired }
 
+    App\Infrastructure\Security\Keycloak\KeycloakClient:
+        arguments:
+            $publicUrl: '%env(KEYCLOAK_URL)%'
+            $internalUrl: '%env(KEYCLOAK_INTERNAL_URL)%'
+            $realm: '%env(KEYCLOAK_REALM)%'
+            $clientId: '%env(KEYCLOAK_ADMIN_CLIENT_ID)%'
+            $clientSecret: '%env(KEYCLOAK_ADMIN_CLIENT_SECRET)%'
+
+    App\Infrastructure\Security\Keycloak\KeycloakLogoutListener:
+        tags:
+            - { name: kernel.event_listener, event: Symfony\Component\Security\Http\Event\LogoutEvent, method: onLogout, dispatcher: security.event_dispatcher.admin }
+
     App\Application\User\PasswordHasherInterface:
         alias: App\Infrastructure\User\Security\SymfonyPasswordHasher
 
