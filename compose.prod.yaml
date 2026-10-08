@@ -7,7 +7,9 @@ services:
       context: .
       target: frankenphp_prod
     environment:
-      APP_SECRET: ${APP_SECRET}
+      # Decrypts the Symfony secrets vault (config/secrets/prod/); APP_SECRET and the other app
+      # secrets live there. Base64 of config/secrets/prod/prod.decrypt.private.php, which is never committed.
+      SYMFONY_DECRYPTION_SECRET: ${SYMFONY_DECRYPTION_SECRET:?SYMFONY_DECRYPTION_SECRET is required in prod}
 
   # Same image as "php" (built from the same frankenphp_prod target) — only the command differs.
   worker:
@@ -16,4 +18,4 @@ services:
       context: .
       target: frankenphp_prod
     environment:
-      APP_SECRET: ${APP_SECRET}
+      SYMFONY_DECRYPTION_SECRET: ${SYMFONY_DECRYPTION_SECRET:?SYMFONY_DECRYPTION_SECRET is required in prod}

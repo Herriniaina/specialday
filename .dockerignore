@@ -32,3 +32,5 @@ vendor/
 .env.local
 .env.local.php
 .env.test
+# Vault decryption keys: prod gets it at runtime via SYMFONY_DECRYPTION_SECRET, never baked into the image
+config/secrets//*.decrypt.private.php
