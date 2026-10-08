@@ -1,3 +1,5 @@
-<?php // dev.encrypt.public on Thu, 08 Oct 2026 14:47:44 +0000
+<?php
+
+// dev.encrypt.public on Thu, 08 Oct 2026 14:47:44 +0000
 
 return "X5\xB0\x8Di\xEE\xBC\xCC\x8E\x24\xD7\xA8\x08\x87\x27S\xE6\xDE\x91\xC25\x2C\x07E\x88\x0B\x84\xE4\x8E\xAA\x8D\x10";
