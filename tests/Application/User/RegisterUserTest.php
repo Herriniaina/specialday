@@ -2,35 +2,31 @@
 
 namespace App\Tests\Application\User;
 
+use App\Application\Shared\TransactionInterface;
 use App\Application\User\EmailAlreadyExistsException;
-use App\Application\User\PasswordHasherInterface;
+use App\Application\User\IdentityProviderInterface;
 use App\Application\User\RegisterUser;
 use App\Application\User\RegisterUserRequest;
-use App\Application\User\UserNotifierInterface;
 use App\Domain\User\User;
 use App\Domain\User\UserRepositoryInterface;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 class RegisterUserTest extends TestCase
 {
     private UserRepositoryInterface&MockObject $userRepository;
-    private PasswordHasherInterface&Stub $passwordHasher;
-    private UserNotifierInterface&MockObject $notifier;
+    private IdentityProviderInterface&MockObject $identityProvider;
     private RegisterUser $registerUser;
 
     protected function setUp(): void
     {
         $this->userRepository = $this->createMock(UserRepositoryInterface::class);
-        $this->passwordHasher = $this->createStub(PasswordHasherInterface::class);
-        $this->notifier = $this->createMock(UserNotifierInterface::class);
+        $this->identityProvider = $this->createMock(IdentityProviderInterface::class);
 
-        $this->registerUser = new RegisterUser(
-            $this->userRepository,
-            $this->passwordHasher,
-            $this->notifier,
-        );
+        $transaction = $this->createStub(TransactionInterface::class);
+        $transaction->method('transactional')->willReturnCallback(static fn (callable $callback) => $callback());
+
+        $this->registerUser = new RegisterUser($this->userRepository, $this->identityProvider, $transaction);
     }
 
     private function validRequest(): RegisterUserRequest
@@ -42,57 +38,86 @@ class RegisterUserTest extends TestCase
             firstName: 'Jane',
             lastName: 'Doe',
             phoneNumber: '+261340000000',
-            companyId: 'company-id',
         );
     }
 
     public function testExecuteThrowsWhenEmailAlreadyExists(): void
     {
-        $this->userRepository->expects(self::once())
-            ->method('existsByEmail')
-            ->with('jane@example.com')
-            ->willReturn(true);
+        $this->identityProvider->expects(self::once())
+            ->method('createAccount')
+            ->willThrowException(new EmailAlreadyExistsException('Email already exist.'));
 
         $this->userRepository->expects(self::never())->method('save');
-        $this->notifier->expects(self::never())->method('emailVerificationRequested');
+        $this->identityProvider->expects(self::never())->method('deleteAccount');
 
         $this->expectException(EmailAlreadyExistsException::class);
 
         $this->registerUser->execute($this->validRequest());
     }
 
-    public function testExecuteHashesPasswordSavesUserAndNotifies(): void
+    public function testExecuteCreatesTheAccountSavesTheLinkedProfileAndSendsTheVerificationEmail(): void
     {
-        $this->userRepository->expects(self::once())
-            ->method('existsByEmail')
-            ->with('jane@example.com')
-            ->willReturn(false);
-
-        $this->passwordHasher->method('hash')->willReturnCallback(function (string $plainPassword): string {
-            self::assertSame('plain-password', $plainPassword);
-
-            return 'hashed-password';
-        });
+        $this->identityProvider->expects(self::once())
+            ->method('createAccount')
+            ->with('jane@example.com', 'plain-password', 'Jane', 'Doe', '+261340000000', ['ROLE_COMPANY_ADMIN'])
+            ->willReturn('keycloak-id');
 
         $this->userRepository->expects(self::once())
             ->method('save')
             ->with(self::callback(function (User $user): bool {
-                self::assertSame('jane@example.com', $user->getEmail());
-                self::assertSame('hashed-password', $user->password);
-                self::assertSame(['ROLE_COMPANY_ADMIN'], $user->getRoles());
-                self::assertFalse($user->isActive());
-                self::assertNotNull($user->getEmailVerificationToken());
+                self::assertSame('keycloak-id', $user->getIdentityProviderId());
+                self::assertNull($user->getCompanyId());
 
                 return true;
             }));
 
-        $this->notifier->expects(self::once())
-            ->method('emailVerificationRequested')
-            ->with(
-                self::isInstanceOf(User::class),
-                self::callback(static fn (string $token): bool => '' !== $token),
-            );
+        $this->identityProvider->expects(self::once())->method('sendEmailVerification')->with('keycloak-id');
+        $this->identityProvider->expects(self::never())->method('deleteAccount');
 
         $this->registerUser->execute($this->validRequest());
+    }
+
+    public function testExecuteDeletesTheAccountWhenTheProfileCannotBeSaved(): void
+    {
+        $this->identityProvider->method('createAccount')->willReturn('keycloak-id');
+        $this->userRepository->expects(self::once())->method('save')->willThrowException(new \RuntimeException('database down'));
+
+        $this->identityProvider->expects(self::never())->method('sendEmailVerification');
+        $this->identityProvider->expects(self::once())->method('deleteAccount')->with('keycloak-id');
+
+        $this->expectExceptionObject(new \RuntimeException('database down'));
+
+        $this->registerUser->execute($this->validRequest());
+    }
+
+    public function testExecuteDeletesTheAccountWhenTheVerificationEmailCannotBeSent(): void
+    {
+        $this->identityProvider->method('createAccount')->willReturn('keycloak-id');
+        $this->identityProvider->method('sendEmailVerification')->willThrowException(new \RuntimeException('smtp down'));
+        $this->userRepository->expects(self::once())->method('save');
+
+        $this->identityProvider->expects(self::once())->method('deleteAccount')->with('keycloak-id');
+
+        $this->expectExceptionObject(new \RuntimeException('smtp down'));
+
+        $this->registerUser->execute($this->validRequest());
+    }
+
+    public function testAnEmptyPhoneNumberIsNotSentToTheIdentityProvider(): void
+    {
+        $this->identityProvider->expects(self::once())
+            ->method('createAccount')
+            ->with('jane@example.com', 'plain-password', 'Jane', 'Doe', null, ['ROLE_COMPANY_ADMIN'])
+            ->willReturn('keycloak-id');
+        $this->userRepository->expects(self::once())->method('save');
+
+        $this->registerUser->execute(new RegisterUserRequest(
+            email: 'jane@example.com',
+            password: 'plain-password',
+            roles: ['ROLE_COMPANY_ADMIN'],
+            firstName: 'Jane',
+            lastName: 'Doe',
+            phoneNumber: '',
+        ));
     }
 }

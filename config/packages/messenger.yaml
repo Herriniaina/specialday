@@ -11,7 +11,6 @@ framework:
             sync: 'sync://'
 
         routing:
-            App\Infrastructure\User\Message\SendUserEmailVerification: async
             App\Infrastructure\Media\Message\TranscodeVideo: async
 
 when@test:

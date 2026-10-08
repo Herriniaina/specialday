@@ -7,11 +7,10 @@ use App\Application\Shared\IdGeneratorInterface;
 use App\Domain\Prestation\Prestation;
 use App\Domain\Prestation\PrestationRepositoryInterface;
 use App\Domain\PrestationCategory\PrestationCategoryRepositoryInterface;
-use App\Infrastructure\Company\Entity\Company;
 use App\Infrastructure\Prestation\Http\CreatePrestationController;
 use App\Infrastructure\Prestation\Http\CreatePrestationInput;
 use App\Infrastructure\Prestation\Http\PriceInput;
-use App\Infrastructure\User\Entity\User;
+use App\Infrastructure\Security\Keycloak\ApiUser;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -48,9 +47,9 @@ class CreatePrestationControllerTest extends TestCase
         );
     }
 
-    private function companyAdmin(): User
+    private function companyAdmin(): ApiUser
     {
-        return (new User())->setCompany((new Company())->setId('company-id'));
+        return new ApiUser('keycloak-id', 'user-id', 'company-id', ['ROLE_USER', 'ROLE_COMPANY_ADMIN']);
     }
 
     /**
@@ -66,7 +65,7 @@ class CreatePrestationControllerTest extends TestCase
 
     public function testReturnsForbiddenWhenUserHasNoCompany(): void
     {
-        $response = ($this->controller)($this->input(), new User());
+        $response = ($this->controller)($this->input(), new ApiUser('keycloak-id', 'user-id', null, ['ROLE_USER']));
 
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
         self::assertSame('prestation.company.required', $this->body($response)['statusText']);

@@ -5,6 +5,8 @@ namespace App\Application\Company;
 readonly class CreateCompanyRequest
 {
     public function __construct(
+        /** Signed-in user who becomes the company's admin. */
+        public string $ownerId,
         public string $name,
         public ?string $nif = null,
         public ?string $stat = null,

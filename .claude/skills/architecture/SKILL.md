@@ -51,13 +51,13 @@ knows nothing about the outside.
 | Domain enum / exception | `src/Domain/[Ctx]/` | `App\Domain\[Ctx]` | `Domain/User/UserRoleEnum.php`, `UserNotFoundException.php` |
 | Use case (application service) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/RegisterUser.php` |
 | Request DTO (use case input) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/RegisterUserRequest.php` |
-| Application port (e.g. hasher, mailer) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/PasswordHasherInterface.php` |
+| Application port (e.g. identity provider, mailer) | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/IdentityProviderInterface.php` |
 | Application exception | `src/Application/[Ctx]/` | `App\Application\[Ctx]` | `Application/User/EmailAlreadyExistsException.php` |
 | Doctrine **entity** | `src/Infrastructure/[Ctx]/Entity/` | `App\Infrastructure\[Ctx]\Entity` | `Infrastructure/User/Entity/User.php` |
 | Repository **adapter** | `src/Infrastructure/[Ctx]/Repository/` | `App\Infrastructure\[Ctx]\Repository` | `Infrastructure/User/Repository/UserRepository.php` |
 | Input DTO (HTTP payload, validated) | `src/Infrastructure/[Ctx]/Http/` | `App\Infrastructure\[Ctx]\Http` | `Infrastructure/User/Http/RegisterUserInput.php` |
 | HTTP controller (API) | `src/Infrastructure/[Ctx]/Http/` | `App\Infrastructure\[Ctx]\Http` | `Infrastructure/User/Http/RegisterUserController.php` |
-| Security adapter | `src/Infrastructure/[Ctx]/Security/` | `App\Infrastructure\[Ctx]\Security` | `Infrastructure/User/Security/SymfonyPasswordHasher.php` |
+| Security adapter (Keycloak) | `src/Infrastructure/Security/Keycloak/` | `App\Infrastructure\Security\Keycloak` | `KeycloakAdminClient.php`, `ApiUserProvider.php` |
 | Shared HTTP base / listeners | `src/Infrastructure/Shared/Http/` | `App\Infrastructure\Shared\Http` | `ApiAbstractController.php`, `EventListeners/…` |
 | EasyAdmin CRUD / dashboard | `src/Infrastructure/Admin/Http/` | `App\Infrastructure\Admin\Http` | `Infrastructure/Admin/Http/PrestationCategoryCrudController.php` |
 
@@ -89,8 +89,8 @@ you add a Doctrine entity, a skeleton repository, or an EasyAdmin controller.
 1. **Port → adapter alias** in `config/services.yaml` under `services:` — required
    for every Domain/Application interface, e.g.:
    ```yaml
-   App\Application\User\PasswordHasherInterface:
-       alias: App\Infrastructure\User\Security\SymfonyPasswordHasher
+   App\Application\User\IdentityProviderInterface:
+       alias: App\Infrastructure\Security\Keycloak\KeycloakAdminClient
    ```
    Add the same for each new `*RepositoryInterface`
    (`App\Domain\Booking\BookingRepositoryInterface: '@App\Infrastructure\Booking\Repository\BookingRepository'`).
@@ -104,12 +104,13 @@ you add a Doctrine entity, a skeleton repository, or an EasyAdmin controller.
    `^/api` catch-all that requires `IS_AUTHENTICATED_FULLY`), so a new public
    controller only needs its `#[Route]` path to start with `/api/public/`
    (e.g. `/api/public/company/{companyId}/media`) — no security.yaml edit
-   needed. This also applies to the JWT login endpoint itself
-   (`/api/public/login`, wired through the `login` firewall's `pattern` and
-   `json_login.check_path`, plus the `api_login` entry in
-   `config/routes.yaml`). Everything else under `/api/...` is authenticated by
-   default; only move a route out of `/api/public/` if it should require
-   auth.
+   needed. Everything else under `/api/...` is authenticated by default with a
+   Keycloak access token (Bearer, checked by the `api` firewall's `oidc`
+   token handler); only move a route out of `/api/public/` if it should
+   require auth. There is no login endpoint: clients get their token from
+   Keycloak. In a controller, the caller is
+   `#[CurrentUser] App\Infrastructure\Security\Keycloak\ApiUser $user`
+   (`$user->userId`, `$user->companyId`, roles from the token).
 3. **Entity change**: create a migration in `migrations/`.
 4. **Event listener**: needs an explicit service definition with
    `kernel.event_listener` tags in `config/services.yaml` (see
@@ -133,7 +134,7 @@ you add a Doctrine entity, a skeleton repository, or an EasyAdmin controller.
 - Input DTO: `<UseCase>Input`, `readonly`, carries the Validator constraints and
   `#[SerializedName]` mapping, resolved via `#[MapRequestPayload]`.
 - Port interface: `<Thing>RepositoryInterface`, `<Capability>Interface`
-  (`PasswordHasherInterface`).
+  (`IdentityProviderInterface`).
 - Constructor-injected `<Thing>RepositoryInterface $x`: name `$x` after the
   interface with the `Interface` suffix dropped and lower-camelCased —
   `CompanyRepositoryInterface $companyRepository`,

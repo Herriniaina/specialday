@@ -5,8 +5,8 @@ namespace App\Infrastructure\Prestation\Http;
 use App\Application\Prestation\CreatePrestation;
 use App\Application\Prestation\CreatePrestationRequest;
 use App\Domain\PrestationCategory\PrestationCategoryNotFoundException;
+use App\Infrastructure\Security\Keycloak\ApiUser;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use App\Infrastructure\User\Entity\User as UserEntity;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,16 +24,16 @@ final class CreatePrestationController extends ApiAbstractController
     #[Route('/api/company/prestation', name: 'app_company_prestation_create', methods: ['POST'])]
     public function __invoke(
         #[MapRequestPayload] CreatePrestationInput $input,
-        #[CurrentUser] UserEntity $user,
+        #[CurrentUser] ApiUser $user,
     ): JsonResponse {
-        $company = $user->getCompany();
-        if (null === $company) {
+        $companyId = $user->companyId;
+        if (null === $companyId) {
             return $this->forbidden('prestation.company.required');
         }
 
         try {
             $prestation = $this->createPrestation->execute(new CreatePrestationRequest(
-                companyId: (string) $company->getId(),
+                companyId: $companyId,
                 prestationCategoryId: $input->prestationCategoryId,
                 amount: (int) $input->price->amount,
                 currency: $input->price->currency,

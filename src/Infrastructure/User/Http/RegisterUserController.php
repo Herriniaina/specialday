@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\User\Http;
 
+use App\Application\User\AccountRejectedException;
 use App\Application\User\EmailAlreadyExistsException;
 use App\Application\User\RegisterUser;
 use App\Application\User\RegisterUserRequest;
@@ -28,10 +29,11 @@ final class RegisterUserController extends ApiAbstractController
                 firstName: $input->firstName,
                 lastName: $input->lastName,
                 phoneNumber: $input->phoneNumber,
-                companyId: $input->companyId,
             ));
         } catch (EmailAlreadyExistsException $e) {
             return $this->conflict($e->getMessage());
+        } catch (AccountRejectedException $e) {
+            return $this->badRequest($e->getMessage());
         } catch (\Exception) {
             return $this->error();
         }

@@ -19,11 +19,12 @@ readonly class RegisterUserInput
         #[Assert\Length(min: 8, minMessage: 'user.password.too_short')]
         public string $password = '',
 
+        // Granted as is on the Keycloak account: public sign-up must never yield a platform role.
         #[Assert\NotNull]
         #[Assert\All([
             new Assert\Type(type: 'string'),
             new Assert\Choice(
-                choices: ['ROLE_USER', 'ROLE_COMPANY_ADMIN', 'ROLE_ADMIN'],
+                choices: ['ROLE_COMPANY_ADMIN'],
                 message: 'user.roles.invalid',
             ),
         ])]
@@ -41,10 +42,6 @@ readonly class RegisterUserInput
             message: 'user.phone.invalid',
         )]
         public string $phoneNumber = '',
-
-        #[SerializedName('company_id')]
-        #[Assert\Uuid(message: 'company.id.invalid')]
-        public ?string $companyId = null,
     ) {
     }
 }

@@ -30,7 +30,6 @@ class RegisterUserInputTest extends TestCase
             'firstName' => 'Jane',
             'lastName' => 'Doe',
             'phoneNumber' => '+261340000000',
-            'companyId' => null,
         ];
         $args = array_replace($defaults, $overrides);
 
@@ -74,19 +73,19 @@ class RegisterUserInputTest extends TestCase
         self::assertContains('user.roles.invalid', $messages);
     }
 
+    public function testAPlatformRoleCannotBeRequestedOnSignUp(): void
+    {
+        $violations = $this->validator->validate($this->validInput(['roles' => ['ROLE_COMPANY_ADMIN', 'ROLE_ADMIN']]));
+
+        $messages = array_map(static fn ($v) => $v->getMessage(), iterator_to_array($violations));
+        self::assertContains('user.roles.invalid', $messages);
+    }
+
     public function testAnInvalidPhoneNumberIsRejected(): void
     {
         $violations = $this->validator->validate($this->validInput(['phoneNumber' => 'not-a-phone']));
 
         $messages = array_map(static fn ($v) => $v->getMessage(), iterator_to_array($violations));
         self::assertContains('user.phone.invalid', $messages);
-    }
-
-    public function testAnInvalidCompanyIdIsRejected(): void
-    {
-        $violations = $this->validator->validate($this->validInput(['companyId' => 'not-a-uuid']));
-
-        $messages = array_map(static fn ($v) => $v->getMessage(), iterator_to_array($violations));
-        self::assertContains('company.id.invalid', $messages);
     }
 }

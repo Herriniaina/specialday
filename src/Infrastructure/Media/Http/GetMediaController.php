@@ -5,8 +5,8 @@ namespace App\Infrastructure\Media\Http;
 use App\Application\Media\GetMediaFile;
 use App\Application\Media\GetMediaFileRequest;
 use App\Application\Media\MediaFileNotFoundException;
+use App\Infrastructure\Security\Keycloak\ApiUser;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use App\Infrastructure\User\Entity\User as UserEntity;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -19,10 +19,10 @@ final class GetMediaController extends ApiAbstractController
     }
 
     #[Route('/api/media/{mediaId}', name: 'app_media_get', methods: ['GET'])]
-    public function __invoke(string $mediaId, #[CurrentUser] UserEntity $user): JsonResponse
+    public function __invoke(string $mediaId, #[CurrentUser] ApiUser $user): JsonResponse
     {
-        $company = $user->getCompany();
-        if (null === $company) {
+        $companyId = $user->companyId;
+        if (null === $companyId) {
             return $this->forbidden('media.company.required');
         }
 
@@ -34,7 +34,7 @@ final class GetMediaController extends ApiAbstractController
             return $this->error();
         }
 
-        if ($mediaFile->companyId !== (string) $company->getId()) {
+        if ($mediaFile->companyId !== $companyId) {
             return $this->notFound('Media file not found.');
         }
 
