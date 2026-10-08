@@ -5,7 +5,6 @@ namespace App\Infrastructure\User\Repository;
 use App\Domain\User\User;
 use App\Domain\User\UserRepositoryInterface;
 use App\Infrastructure\Company\Entity\Company as CompanyEntity;
-use App\Infrastructure\User\Entity\User as EntityUser;
 use App\Infrastructure\User\Entity\User as UserEntity;
 use Doctrine\ORM\EntityManagerInterface;
 use Ramsey\Uuid\Uuid;
@@ -19,15 +18,8 @@ class UserRepository implements UserRepositoryInterface
     #[\Override]
     public function save(User $user): void
     {
-        $entityUser = new EntityUser();
-        $entityUser->setEmail($user->email);
-        $entityUser->setFirstName($user->firstName);
-        $entityUser->setLastName($user->lastName);
-        $entityUser->setPhoneNumber($user->phoneNumber);
-        $entityUser->setRoles($user->roles);
-        $entityUser->setPassword($user->password);
-        $entityUser->setIsActive($user->isActive);
-        $entityUser->setEmailVerificationToken($user->emailVerificationToken);
+        $entityUser = new UserEntity();
+        $entityUser->setIdentityProviderId($user->identityProviderId);
 
         if (null !== $user->companyId) {
             $entityUser->setCompany($this->em->getReference(CompanyEntity::class, $user->companyId));
@@ -38,65 +30,44 @@ class UserRepository implements UserRepositoryInterface
     }
 
     #[\Override]
-    public function existsByEmail(string $email): bool
-    {
-        return null !== $this->em->getRepository(UserEntity::class)->findOneBy(['email' => $email]);
-    }
-
-    #[\Override]
     public function findById(string $id): ?User
     {
-        $entity = $this->em->find(UserEntity::class, Uuid::fromString($id));
+        $entity = Uuid::isValid($id) ? $this->em->find(UserEntity::class, Uuid::fromString($id)) : null;
 
         return null === $entity ? null : $this->toDomain($entity);
     }
 
     #[\Override]
-    public function findByEmailVerificationToken(string $token): ?User
+    public function findByIdentityProviderId(string $identityProviderId): ?User
     {
         $entity = $this->em->getRepository(UserEntity::class)
-            ->findOneBy(['emailVerificationToken' => $token]);
+            ->findOneBy(['identityProviderId' => $identityProviderId]);
 
         return null === $entity ? null : $this->toDomain($entity);
     }
 
     #[\Override]
-    public function activate(string $userId): void
+    public function attachToCompany(string $userId, string $companyId): bool
     {
-        $entity = $this->em->find(UserEntity::class, Uuid::fromString($userId));
-        if (null === $entity) {
-            return;
-        }
+        // A single conditional UPDATE: two concurrent requests cannot both attach a company.
+        $updated = $this->em->createQueryBuilder()
+            ->update(UserEntity::class, 'u')
+            ->set('u.company', ':company')
+            ->where('u.id = :id')
+            ->andWhere('u.company IS NULL')
+            ->setParameter('company', $companyId)
+            ->setParameter('id', Uuid::fromString($userId), 'uuid')
+            ->getQuery()
+            ->execute();
 
-        $entity->setIsActive(true);
-        $entity->setEmailVerificationToken(null);
-        $this->em->flush();
-    }
-
-    #[\Override]
-    public function updatePassword(string $userId, string $hashedPassword): void
-    {
-        $entity = $this->em->find(UserEntity::class, Uuid::fromString($userId));
-        if (null === $entity) {
-            return;
-        }
-
-        $entity->setPassword($hashedPassword);
-        $this->em->flush();
+        return 1 === $updated;
     }
 
     private function toDomain(UserEntity $entity): User
     {
         return new User(
-            email: (string) $entity->getEmail(),
-            password: (string) $entity->getPassword(),
-            roles: $entity->getRoles(),
-            firstName: $entity->getFirstName(),
-            lastName: $entity->getLastName(),
-            phoneNumber: $entity->getPhoneNumber(),
+            identityProviderId: (string) $entity->getIdentityProviderId(),
             companyId: $entity->getCompany()?->getId(),
-            isActive: $entity->isActive(),
-            emailVerificationToken: $entity->getEmailVerificationToken(),
             id: (string) $entity->getId(),
         );
     }

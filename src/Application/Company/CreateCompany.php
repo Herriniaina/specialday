@@ -4,8 +4,10 @@ namespace App\Application\Company;
 
 use App\Application\Shared\IdGeneratorInterface;
 use App\Application\Shared\SlugGeneratorInterface;
+use App\Application\Shared\TransactionInterface;
 use App\Domain\Company\Company;
 use App\Domain\Company\CompanyRepositoryInterface;
+use App\Domain\User\UserRepositoryInterface;
 
 class CreateCompany
 {
@@ -13,11 +15,23 @@ class CreateCompany
         private CompanyRepositoryInterface $companyRepository,
         private IdGeneratorInterface $idGenerator,
         private SlugGeneratorInterface $slugGenerator,
+        private UserRepositoryInterface $userRepository,
+        private TransactionInterface $transaction,
     ) {
     }
 
+    /**
+     * The owner is linked to the company it creates: a user can own a single company, and can
+     * never be attached to someone else's company from here.
+     *
+     * @throws UserAlreadyHasCompanyException
+     */
     public function execute(CreateCompanyRequest $request): Company
     {
+        if (null !== $this->userRepository->findById($request->ownerId)?->getCompanyId()) {
+            throw new UserAlreadyHasCompanyException('User already has a company.');
+        }
+
         $company = new Company(
             id: $this->idGenerator->generate(),
             name: $request->name,
@@ -32,7 +46,14 @@ class CreateCompany
             youtubeProfile: $request->youtubeProfile,
         );
 
-        $this->companyRepository->save($company);
+        $this->transaction->transactional(function () use ($company, $request): void {
+            $this->companyRepository->save($company);
+
+            // Checked again atomically: a concurrent request may have attached a company meanwhile.
+            if (!$this->userRepository->attachToCompany($request->ownerId, $company->getId())) {
+                throw new UserAlreadyHasCompanyException('User already has a company.');
+            }
+        });
 
         return $company;
     }

@@ -11,8 +11,8 @@ use App\Application\Media\StorageQuotaExceededException;
 use App\Application\Media\SubscriptionNotFoundException;
 use App\Application\Media\UnsupportedMediaTypeException;
 use App\Domain\Media\MediaStatusEnum;
+use App\Infrastructure\Security\Keycloak\ApiUser;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use App\Infrastructure\User\Entity\User as UserEntity;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
@@ -29,18 +29,18 @@ final class ConfirmVideoUploadController extends ApiAbstractController
     public function __invoke(
         string $mediaId,
         #[MapRequestPayload] ConfirmVideoUploadInput $input,
-        #[CurrentUser] UserEntity $user,
+        #[CurrentUser] ApiUser $user,
     ): JsonResponse {
-        $company = $user->getCompany();
-        if (null === $company) {
+        $companyId = $user->companyId;
+        if (null === $companyId) {
             return $this->forbidden('media.company.required');
         }
 
         try {
             $mediaFile = $this->confirmVideoUpload->execute(new ConfirmVideoUploadRequest(
                 mediaId: $mediaId,
-                companyId: (string) $company->getId(),
-                userId: (string) $user->getId(),
+                companyId: $companyId,
+                userId: $user->userId,
                 originalFilename: $input->filename,
             ));
         } catch (MediaFileNotFoundException|MediaObjectNotFoundException $e) {

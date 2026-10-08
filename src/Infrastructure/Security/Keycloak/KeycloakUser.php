@@ -30,16 +30,7 @@ final readonly class KeycloakUser implements UserInterface
             throw new KeycloakRequestFailedException('Keycloak access token has neither an "email" nor a "preferred_username" claim.');
         }
 
-        $realmAccess = $claims['realm_access'] ?? null;
-        $realmRoles = is_array($realmAccess) ? $realmAccess['roles'] ?? [] : [];
-        // Keycloak also grants technical roles (offline_access, default-roles-<realm>…): only the
-        // application's ROLE_* roles are kept.
-        $roles = array_filter(
-            is_array($realmRoles) ? $realmRoles : [],
-            static fn (mixed $role): bool => is_string($role) && str_starts_with($role, 'ROLE_'),
-        );
-
-        return new self($identifier, array_values(array_unique(['ROLE_USER', ...$roles])));
+        return new self($identifier, KeycloakRoles::fromClaims($claims));
     }
 
     public function getUserIdentifier(): string

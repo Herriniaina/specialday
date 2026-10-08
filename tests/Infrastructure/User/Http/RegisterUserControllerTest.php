@@ -2,9 +2,11 @@
 
 namespace App\Tests\Infrastructure\User\Http;
 
-use App\Application\User\PasswordHasherInterface;
+use App\Application\Shared\TransactionInterface;
+use App\Application\User\AccountRejectedException;
+use App\Application\User\EmailAlreadyExistsException;
+use App\Application\User\IdentityProviderInterface;
 use App\Application\User\RegisterUser;
-use App\Application\User\UserNotifierInterface;
 use App\Domain\User\UserRepositoryInterface;
 use App\Infrastructure\User\Http\RegisterUserController;
 use App\Infrastructure\User\Http\RegisterUserInput;
@@ -15,20 +17,21 @@ use Symfony\Component\HttpFoundation\Response;
 class RegisterUserControllerTest extends TestCase
 {
     private UserRepositoryInterface&Stub $userRepository;
-    private PasswordHasherInterface&Stub $passwordHasher;
-    private UserNotifierInterface&Stub $notifier;
+    private IdentityProviderInterface&Stub $identityProvider;
     private RegisterUserController $controller;
 
     protected function setUp(): void
     {
         $this->userRepository = $this->createStub(UserRepositoryInterface::class);
-        $this->passwordHasher = $this->createStub(PasswordHasherInterface::class);
-        $this->notifier = $this->createStub(UserNotifierInterface::class);
+        $this->identityProvider = $this->createStub(IdentityProviderInterface::class);
+
+        $transaction = $this->createStub(TransactionInterface::class);
+        $transaction->method('transactional')->willReturnCallback(static fn (callable $callback) => $callback());
 
         $this->controller = new RegisterUserController(new RegisterUser(
             $this->userRepository,
-            $this->passwordHasher,
-            $this->notifier,
+            $this->identityProvider,
+            $transaction,
         ));
     }
 
@@ -41,23 +44,31 @@ class RegisterUserControllerTest extends TestCase
             firstName: 'Jane',
             lastName: 'Doe',
             phoneNumber: '+261340000000',
-            companyId: 'company-id',
         );
     }
 
     public function testReturnsConflictWhenTheEmailAlreadyExists(): void
     {
-        $this->userRepository->method('existsByEmail')->willReturn(true);
+        $this->identityProvider->method('createAccount')->willThrowException(new EmailAlreadyExistsException('Email already exist.'));
 
         $response = ($this->controller)($this->input());
 
         self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
     }
 
+    public function testReturnsBadRequestWhenKeycloakRejectsTheAccount(): void
+    {
+        $this->identityProvider->method('createAccount')->willThrowException(new AccountRejectedException('invalidPasswordNotEmailMessage'));
+
+        $response = ($this->controller)($this->input());
+
+        self::assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        self::assertSame('invalidPasswordNotEmailMessage', json_decode((string) $response->getContent(), true)['statusText'] ?? null);
+    }
+
     public function testReturnsServerErrorOnAnUnexpectedException(): void
     {
-        $this->userRepository->method('existsByEmail')->willReturn(false);
-        $this->passwordHasher->method('hash')->willThrowException(new \RuntimeException('hashing failed'));
+        $this->identityProvider->method('createAccount')->willThrowException(new \RuntimeException('keycloak down'));
 
         $response = ($this->controller)($this->input());
 
@@ -66,8 +77,7 @@ class RegisterUserControllerTest extends TestCase
 
     public function testReturnsCreatedWhenTheUserIsRegistered(): void
     {
-        $this->userRepository->method('existsByEmail')->willReturn(false);
-        $this->passwordHasher->method('hash')->willReturn('hashed-password');
+        $this->identityProvider->method('createAccount')->willReturn('keycloak-id');
 
         $response = ($this->controller)($this->input());
 

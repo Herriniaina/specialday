@@ -16,10 +16,9 @@ use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use App\Domain\Subscription\Subscription;
 use App\Domain\Subscription\SubscriptionRepositoryInterface;
-use App\Infrastructure\Company\Entity\Company;
 use App\Infrastructure\Media\Http\ConfirmVideoUploadController;
 use App\Infrastructure\Media\Http\ConfirmVideoUploadInput;
-use App\Infrastructure\User\Entity\User;
+use App\Infrastructure\Security\Keycloak\ApiUser;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -59,9 +58,9 @@ class ConfirmVideoUploadControllerTest extends TestCase
         return new ConfirmVideoUploadInput(filename: 'clip.mp4');
     }
 
-    private function companyAdmin(): User
+    private function companyAdmin(): ApiUser
     {
-        return (new User())->setCompany((new Company())->setId('company-id'));
+        return new ApiUser('keycloak-id', 'user-id', 'company-id', ['ROLE_USER', 'ROLE_COMPANY_ADMIN']);
     }
 
     /**
@@ -77,7 +76,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
 
     public function testReturnsForbiddenWhenUserHasNoCompany(): void
     {
-        $response = ($this->controller)('media-id', $this->input(), new User());
+        $response = ($this->controller)('media-id', $this->input(), new ApiUser('keycloak-id', 'user-id', null, ['ROLE_USER']));
 
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
         self::assertSame('media.company.required', $this->body($response)['statusText']);

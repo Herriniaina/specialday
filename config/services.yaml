@@ -28,12 +28,6 @@ services:
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest, priority: 16 }
 
-    App\Infrastructure\Shared\Http\EventListeners\JwtAuthenticationFailureListener:
-        tags:
-            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_not_found, method: onJwtNotFound }
-            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_invalid, method: onJwtInvalid }
-            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_expired, method: onJwtExpired }
-
     App\Infrastructure\Security\Keycloak\KeycloakClient:
         arguments:
             $publicUrl: '%env(KEYCLOAK_URL)%'
@@ -42,12 +36,22 @@ services:
             $clientId: '%env(KEYCLOAK_ADMIN_CLIENT_ID)%'
             $clientSecret: '%env(KEYCLOAK_ADMIN_CLIENT_SECRET)%'
 
+    App\Infrastructure\Security\Keycloak\KeycloakAdminClient:
+        arguments:
+            $internalUrl: '%env(KEYCLOAK_INTERNAL_URL)%'
+            $realm: '%env(KEYCLOAK_REALM)%'
+            $clientId: '%env(KEYCLOAK_API_CLIENT_ID)%'
+            $clientSecret: '%env(KEYCLOAK_API_CLIENT_SECRET)%'
+
+    App\Application\User\IdentityProviderInterface:
+        alias: App\Infrastructure\Security\Keycloak\KeycloakAdminClient
+
+    App\Domain\User\UserRepositoryInterface:
+        alias: App\Infrastructure\User\Repository\UserRepository
+
     App\Infrastructure\Security\Keycloak\KeycloakLogoutListener:
         tags:
             - { name: kernel.event_listener, event: Symfony\Component\Security\Http\Event\LogoutEvent, method: onLogout, dispatcher: security.event_dispatcher.admin }
-
-    App\Application\User\PasswordHasherInterface:
-        alias: App\Infrastructure\User\Security\SymfonyPasswordHasher
 
     App\Domain\Company\CompanyRepositoryInterface:
         alias: App\Infrastructure\Company\Repository\CompanyRepository
@@ -58,9 +62,6 @@ services:
     App\Domain\PrestationCategory\PrestationCategoryRepositoryInterface:
         alias: App\Infrastructure\PrestationCategory\Repository\PrestationCategoryRepository
 
-    App\Application\User\UserNotifierInterface:
-        alias: App\Infrastructure\User\Notifier\MessengerUserNotifier
-
     App\Application\Shared\IdGeneratorInterface:
         alias: App\Infrastructure\Shared\Identity\UuidV7IdGenerator
 
@@ -69,11 +70,6 @@ services:
 
     App\Application\Shared\TransactionInterface:
         alias: App\Infrastructure\Shared\Doctrine\DoctrineTransaction
-
-    App\Infrastructure\User\MessageHandler\SendUserEmailVerificationHandler:
-        arguments:
-            $appBaseUrl: '%env(DEFAULT_URI)%'
-            $mailerFrom: '%env(MAILER_FROM)%'
 
     App\Infrastructure\Shared\Messenger\DeadlineRetryStrategy:
         arguments:

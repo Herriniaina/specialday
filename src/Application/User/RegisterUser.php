@@ -2,40 +2,43 @@
 
 namespace App\Application\User;
 
+use App\Application\Shared\TransactionInterface;
 use App\Domain\User\User;
 use App\Domain\User\UserRepositoryInterface;
 
 class RegisterUser
 {
     public function __construct(
-        public UserRepositoryInterface $userRepository,
-        private PasswordHasherInterface $passwordHasher,
-        private UserNotifierInterface $notifier,
+        private UserRepositoryInterface $userRepository,
+        private IdentityProviderInterface $identityProvider,
+        private TransactionInterface $transaction,
     ) {
     }
 
     public function execute(
         RegisterUserRequest $registerUserRequest,
     ): void {
-        if ($this->userRepository->existsByEmail($registerUserRequest->email)) {
-            throw new EmailAlreadyExistsException('Email already exist.');
-        }
-
-        $verificationToken = bin2hex(random_bytes(32));
-
-        $user = new User(
-            email: $registerUserRequest->email,
-            password: $this->passwordHasher->hash($registerUserRequest->password),
-            roles: $registerUserRequest->roles,
-            firstName: $registerUserRequest->firstName,
-            lastName: $registerUserRequest->lastName,
-            phoneNumber: $registerUserRequest->phoneNumber,
-            companyId: $registerUserRequest->companyId,
-            isActive: false,
-            emailVerificationToken: $verificationToken,
+        // Throws EmailAlreadyExistsException: Keycloak enforces the email uniqueness.
+        $accountId = $this->identityProvider->createAccount(
+            $registerUserRequest->email,
+            $registerUserRequest->password,
+            $registerUserRequest->firstName,
+            $registerUserRequest->lastName,
+            '' === $registerUserRequest->phoneNumber ? null : $registerUserRequest->phoneNumber,
+            $registerUserRequest->roles,
         );
 
-        $this->userRepository->save($user);
-        $this->notifier->emailVerificationRequested($user, $verificationToken);
+        try {
+            $this->transaction->transactional(function () use ($accountId): void {
+                // The company is created afterwards, signed in (see CreateCompany).
+                $this->userRepository->save(new User(identityProviderId: $accountId));
+                $this->identityProvider->sendEmailVerification($accountId);
+            });
+        } catch (\Throwable $exception) {
+            // No account without its local profile: the registration can simply be retried.
+            $this->identityProvider->deleteAccount($accountId);
+
+            throw $exception;
+        }
     }
 }

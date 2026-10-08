@@ -6,8 +6,8 @@ use App\Application\Media\StorageQuotaExceededException;
 use App\Application\Media\SubscriptionNotFoundException;
 use App\Application\Media\UploadImage;
 use App\Application\Media\UploadImageRequest;
+use App\Infrastructure\Security\Keycloak\ApiUser;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
-use App\Infrastructure\User\Entity\User as UserEntity;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,10 +34,10 @@ final class UploadImageController extends ApiAbstractController
      * same Input DTO / validation-error envelope as everywhere else.
      */
     #[Route('/api/media/images', name: 'app_media_image_upload', methods: ['POST'])]
-    public function __invoke(Request $request, #[CurrentUser] UserEntity $user): JsonResponse
+    public function __invoke(Request $request, #[CurrentUser] ApiUser $user): JsonResponse
     {
-        $company = $user->getCompany();
-        if (null === $company) {
+        $companyId = $user->companyId;
+        if (null === $companyId) {
             return $this->forbidden('media.company.required');
         }
 
@@ -53,8 +53,8 @@ final class UploadImageController extends ApiAbstractController
 
         try {
             $mediaFile = $this->uploadImage->execute(new UploadImageRequest(
-                companyId: (string) $company->getId(),
-                userId: (string) $user->getId(),
+                companyId: $companyId,
+                userId: $user->userId,
                 originalFilename: (string) $file->getClientOriginalName(),
                 mimeType: (string) $file->getMimeType(),
                 fileSize: (int) $file->getSize(),

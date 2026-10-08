@@ -2,21 +2,15 @@
 
 namespace App\Domain\User;
 
+/**
+ * Link between an identity provider account (which holds email, name, phone, credentials and
+ * roles) and the company the user works for.
+ */
 class User
 {
-    /**
-     * @param string[] $roles
-     */
     public function __construct(
-        public string $email,
-        public string $password,
-        public array $roles,
-        public ?string $firstName,
-        public ?string $lastName,
-        public ?string $phoneNumber,
+        public string $identityProviderId,
         public ?string $companyId = null,
-        public bool $isActive = false,
-        public ?string $emailVerificationToken = null,
         public ?string $id = null,
     ) {
     }
@@ -26,46 +20,13 @@ class User
         return $this->id;
     }
 
-    public function getFirstName(): ?string
+    public function getIdentityProviderId(): string
     {
-        return $this->firstName;
-    }
-
-    public function getLastName(): ?string
-    {
-        return $this->lastName;
-    }
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public function getPhoneNumber(): ?string
-    {
-        return $this->phoneNumber;
+        return $this->identityProviderId;
     }
 
     public function getCompanyId(): ?string
     {
         return $this->companyId;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getRoles(): array
-    {
-        return $this->roles;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->isActive;
-    }
-
-    public function getEmailVerificationToken(): ?string
-    {
-        return $this->emailVerificationToken;
     }
 }

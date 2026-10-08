@@ -46,6 +46,7 @@
             <file>src/Infrastructure/Media/Entity/MediaFile.php</file>
             <file>src/Infrastructure/Subscription/Entity/Subscription.php</file>
             <file>src/Infrastructure/Subscription/Entity/SubscriptionPlan.php</file>
+            <file>src/Infrastructure/User/Entity/User.php</file>
             <!-- Doctrine repositories: QueryBuilder glue with no unit-testable branching without
                  a real database; their callers exercise them through the repository interface
                  mocks in the Application/Http test suites instead -->
@@ -63,8 +64,6 @@
             <directory>src/Infrastructure/Media/Messenger</directory>
             <directory>src/Infrastructure/Media/MessageHandler</directory>
             <directory>src/Infrastructure/Media/Message</directory>
-            <!-- Trivial JWT failure event-to-response mapping, no branching logic -->
-            <file>src/Infrastructure/Shared/Http/EventListeners/JwtAuthenticationFailureListener.php</file>
         </exclude>
 
         <deprecationTrigger>

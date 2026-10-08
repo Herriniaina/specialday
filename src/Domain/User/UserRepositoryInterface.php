@@ -6,13 +6,14 @@ interface UserRepositoryInterface
 {
     public function save(User $user): void;
 
-    public function existsByEmail(string $email): bool;
-
     public function findById(string $id): ?User;
 
-    public function findByEmailVerificationToken(string $token): ?User;
+    public function findByIdentityProviderId(string $identityProviderId): ?User;
 
-    public function activate(string $userId): void;
-
-    public function updatePassword(string $userId, string $hashedPassword): void;
+    /**
+     * Links the user to the company, unless it already belongs to one (checked atomically).
+     *
+     * @return bool false when the user was already linked to a company (or does not exist)
+     */
+    public function attachToCompany(string $userId, string $companyId): bool;
 }
