@@ -9,6 +9,7 @@ use App\Application\Media\MediaObjectMetadataReaderInterface;
 use App\Application\Media\MediaObjectNotFoundException;
 use App\Application\Media\VideoTranscodeSchedulerInterface;
 use App\Application\Shared\TransactionInterface;
+use App\Domain\Company\Company;
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
 use App\Domain\Media\MediaStatusEnum;
@@ -58,6 +59,11 @@ class ConfirmVideoUploadControllerTest extends TestCase
         return new ConfirmVideoUploadInput(filename: 'clip.mp4');
     }
 
+    private function company(): Company
+    {
+        return new Company('company-id', 'Photo Company', 'photo-company', new \DateTimeImmutable());
+    }
+
     private function companyAdmin(): ApiUser
     {
         return new ApiUser('keycloak-id', 'user-id', 'company-id', ['ROLE_USER', 'ROLE_COMPANY_ADMIN']);
@@ -72,14 +78,6 @@ class ConfirmVideoUploadControllerTest extends TestCase
         self::assertIsArray($body);
 
         return $body;
-    }
-
-    public function testReturnsForbiddenWhenUserHasNoCompany(): void
-    {
-        $response = ($this->controller)('media-id', $this->input(), new ApiUser('keycloak-id', 'user-id', null, ['ROLE_USER']));
-
-        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
-        self::assertSame('media.company.required', $this->body($response)['statusText']);
     }
 
     public function testReturnsNotFoundWhenTheMediaFileBelongsToAnotherCompany(): void
@@ -97,7 +95,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
             id: 'media-id',
         ));
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
@@ -107,7 +105,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
         $this->mediaFileRepository->method('findById')->willReturn(null);
         $this->mediaObjectMetadataReader->method('read')->willThrowException(new MediaObjectNotFoundException('not found'));
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
@@ -119,7 +117,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
             new MediaObjectMetadata(contentType: 'image/jpeg', contentLength: 1_000),
         );
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_UNSUPPORTED_MEDIA_TYPE, $response->getStatusCode());
     }
@@ -132,7 +130,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
         );
         $this->subscriptionRepository->method('findByCompanyId')->willReturn(null);
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
     }
@@ -144,7 +142,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
             new MediaObjectMetadata(contentType: 'video/mp4', contentLength: 2 * 1024 * 1024 * 1024 + 1),
         );
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_REQUEST_ENTITY_TOO_LARGE, $response->getStatusCode());
     }
@@ -154,7 +152,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
         $this->mediaFileRepository->method('findById')->willReturn(null);
         $this->mediaObjectMetadataReader->method('read')->willThrowException(new \RuntimeException('storage down'));
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
     }
@@ -169,7 +167,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
             new Subscription(id: 'subscription-id', companyId: 'company-id', storageUsedBytes: 0, storageQuotaBytes: 10_000),
         );
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_ACCEPTED, $response->getStatusCode());
         self::assertSame('processing', $this->body($response)['payload']['status']);
@@ -191,7 +189,7 @@ class ConfirmVideoUploadControllerTest extends TestCase
             status: MediaStatusEnum::READY,
         ));
 
-        $response = ($this->controller)('media-id', $this->input(), $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->input(), $this->company(), $this->companyAdmin());
 
         self::assertSame(Response::HTTP_CREATED, $response->getStatusCode());
         self::assertSame('ready', $this->body($response)['payload']['status']);

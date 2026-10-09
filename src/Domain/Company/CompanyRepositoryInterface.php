@@ -8,6 +8,8 @@ interface CompanyRepositoryInterface
 
     public function existsBySlug(string $slug): bool;
 
+    public function findBySlug(string $slug): ?Company;
+
     public function existsById(string $id): bool;
 
     public function search(CompanySearchCriteria $criteria): CompanySearchResult;

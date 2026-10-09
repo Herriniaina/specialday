@@ -4,6 +4,12 @@ namespace App\Domain\Company;
 
 class Company
 {
+    /**
+     * Slugs a company can't take: its subdomain (www.<slug>.<domain>) would clash with a host of
+     * the platform itself.
+     */
+    public const array RESERVED_SLUGS = ['www'];
+
     public function __construct(
         public string $id,
         public string $name,
@@ -17,6 +23,11 @@ class Company
         public ?string $facebookProfile = null,
         public ?string $youtubeProfile = null,
     ) {
+    }
+
+    public static function isReservedSlug(string $slug): bool
+    {
+        return \in_array($slug, self::RESERVED_SLUGS, true);
     }
 
     public function getId(): string

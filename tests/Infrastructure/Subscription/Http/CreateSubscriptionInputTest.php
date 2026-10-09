@@ -35,7 +35,6 @@ class CreateSubscriptionInputTest extends TestCase
     public function testAValidInputHasNoViolations(): void
     {
         $input = new CreateSubscriptionInput(
-            companyId: '01a0c315-5417-7090-906c-37014e11dac8',
             plan: 'standard',
             paymentMethod: 'mobile_money',
         );
@@ -43,36 +42,18 @@ class CreateSubscriptionInputTest extends TestCase
         self::assertCount(0, $this->validator->validate($input));
     }
 
-    public function testCompanyIdAndPlanDefaultsAreValid(): void
+    public function testDefaultsAreValid(): void
     {
-        $input = new CreateSubscriptionInput(companyId: '01a0c315-5417-7090-906c-37014e11dac8');
+        $input = new CreateSubscriptionInput();
 
         self::assertSame('free', $input->plan);
         self::assertNull($input->paymentMethod);
         self::assertCount(0, $this->validator->validate($input));
     }
 
-    public function testABlankCompanyIdIsRejected(): void
-    {
-        $input = new CreateSubscriptionInput(companyId: '');
-
-        $messages = $this->messagesByPropertyPath($this->validator->validate($input));
-
-        self::assertSame('company.id.not_blank', $messages['companyId'] ?? null);
-    }
-
-    public function testANonUuidCompanyIdIsRejected(): void
-    {
-        $input = new CreateSubscriptionInput(companyId: 'not-a-uuid');
-
-        $messages = $this->messagesByPropertyPath($this->validator->validate($input));
-
-        self::assertSame('company.id.invalid', $messages['companyId'] ?? null);
-    }
-
     public function testAnInvalidPlanIsRejected(): void
     {
-        $input = new CreateSubscriptionInput(companyId: '01a0c315-5417-7090-906c-37014e11dac8', plan: 'gold');
+        $input = new CreateSubscriptionInput(plan: 'gold');
 
         $messages = $this->messagesByPropertyPath($this->validator->validate($input));
 
@@ -81,10 +62,7 @@ class CreateSubscriptionInputTest extends TestCase
 
     public function testAnInvalidPaymentMethodIsRejected(): void
     {
-        $input = new CreateSubscriptionInput(
-            companyId: '01a0c315-5417-7090-906c-37014e11dac8',
-            paymentMethod: 'cash',
-        );
+        $input = new CreateSubscriptionInput(paymentMethod: 'cash');
 
         $messages = $this->messagesByPropertyPath($this->validator->validate($input));
 

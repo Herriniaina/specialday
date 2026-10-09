@@ -59,4 +59,7 @@ security:
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/api/public, roles: PUBLIC_ACCESS }
-        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+        # Authenticated API caller who, on a company subdomain, also belongs to that company (see
+        # CompanyAccessVoter). A single attribute on purpose: with the "affirmative" strategy, adding
+        # IS_AUTHENTICATED_FULLY next to it would grant access on its own.
+        - { path: ^/api, roles: COMPANY_ACCESS }

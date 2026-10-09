@@ -4,8 +4,10 @@ namespace App\Infrastructure\Media\Http;
 
 use App\Application\Media\ListCompanyMediaFiles;
 use App\Application\Media\ListCompanyMediaFilesRequest;
+use App\Domain\Company\Company;
 use App\Domain\Company\CompanyNotFoundException;
 use App\Domain\Media\MediaFile;
+use App\Infrastructure\Company\Http\CurrentCompany;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -19,11 +21,11 @@ final class ListCompanyMediaFilesController extends ApiAbstractController
     ) {
     }
 
-    #[Route('/api/public/company/{companyId}/media', name: 'app_public_company_media_list', methods: ['GET'])]
-    public function __invoke(string $companyId): JsonResponse
+    #[Route('/api/public/media', name: 'app_public_media_list', methods: ['GET'])]
+    public function __invoke(#[CurrentCompany] Company $company): JsonResponse
     {
         try {
-            $mediaFiles = $this->listCompanyMediaFiles->execute(new ListCompanyMediaFilesRequest($companyId));
+            $mediaFiles = $this->listCompanyMediaFiles->execute(new ListCompanyMediaFilesRequest($company->getId()));
         } catch (CompanyNotFoundException $e) {
             return $this->notFound($e->getMessage());
         } catch (\Exception) {

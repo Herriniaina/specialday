@@ -7,12 +7,12 @@ use App\Application\Media\RequestVideoUpload;
 use App\Application\Media\RequestVideoUploadRequest;
 use App\Application\Media\StorageQuotaExceededException;
 use App\Application\Media\SubscriptionNotFoundException;
-use App\Infrastructure\Security\Keycloak\ApiUser;
+use App\Domain\Company\Company;
+use App\Infrastructure\Company\Http\CurrentCompany;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 final class RequestVideoUploadController extends ApiAbstractController
 {
@@ -24,16 +24,11 @@ final class RequestVideoUploadController extends ApiAbstractController
     #[Route('/api/media/videos', name: 'app_media_video_request_upload', methods: ['POST'])]
     public function __invoke(
         #[MapRequestPayload] RequestVideoUploadInput $input,
-        #[CurrentUser] ApiUser $user,
+        #[CurrentCompany] Company $company,
     ): JsonResponse {
-        $companyId = $user->companyId;
-        if (null === $companyId) {
-            return $this->forbidden('media.company.required');
-        }
-
         try {
             $result = $this->requestVideoUpload->execute(new RequestVideoUploadRequest(
-                companyId: $companyId,
+                companyId: $company->getId(),
                 mimeType: $input->mimeType,
                 fileSize: $input->fileSize,
             ));

@@ -103,7 +103,7 @@ you add a Doctrine entity, a skeleton repository, or an EasyAdmin controller.
    (`{ path: ^/api/public, roles: PUBLIC_ACCESS }`, placed **before** the
    `^/api` catch-all that requires `IS_AUTHENTICATED_FULLY`), so a new public
    controller only needs its `#[Route]` path to start with `/api/public/`
-   (e.g. `/api/public/company/{companyId}/media`) — no security.yaml edit
+   (e.g. `/api/public/media`) — no security.yaml edit
    needed. Everything else under `/api/...` is authenticated by default with a
    Keycloak access token (Bearer, checked by the `api` firewall's `oidc`
    token handler); only move a route out of `/api/public/` if it should

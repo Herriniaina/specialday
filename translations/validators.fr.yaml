@@ -15,6 +15,8 @@ company:
         too_long: "Le nom de l'entreprise ne peut pas dépasser {{ limit }} caractères."
     slug:
         not_blank: "Le slug est obligatoire."
+        invalid: "Le slug ne peut contenir que des lettres minuscules, des chiffres et des tirets."
+        reserved: "Le slug '{{ value }}' est réservé."
     id:
         invalid: "L'identifiant de l'entreprise n'est pas valide."
     nif:

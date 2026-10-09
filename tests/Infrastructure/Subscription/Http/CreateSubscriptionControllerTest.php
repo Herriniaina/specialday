@@ -3,6 +3,7 @@
 namespace App\Tests\Infrastructure\Subscription\Http;
 
 use App\Application\Subscription\CreateSubscription;
+use App\Domain\Company\Company;
 use App\Domain\Company\CompanyRepositoryInterface;
 use App\Domain\Subscription\SubscriptionRepositoryInterface;
 use App\Infrastructure\Subscription\Http\CreateSubscriptionController;
@@ -31,7 +32,12 @@ class CreateSubscriptionControllerTest extends TestCase
 
     private function input(): CreateSubscriptionInput
     {
-        return new CreateSubscriptionInput(companyId: 'company-id', plan: 'standard', paymentMethod: 'stripe');
+        return new CreateSubscriptionInput(plan: 'standard', paymentMethod: 'stripe');
+    }
+
+    private function company(): Company
+    {
+        return new Company('company-id', 'Photo Company', 'photo-company', new \DateTimeImmutable());
     }
 
     /**
@@ -49,7 +55,7 @@ class CreateSubscriptionControllerTest extends TestCase
     {
         $this->companyRepository->method('existsById')->willReturn(false);
 
-        $response = ($this->controller)($this->input());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
@@ -59,7 +65,7 @@ class CreateSubscriptionControllerTest extends TestCase
         $this->companyRepository->method('existsById')->willReturn(true);
         $this->subscriptionRepository->method('existsByCompanyId')->willReturn(true);
 
-        $response = ($this->controller)($this->input());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
     }
@@ -70,7 +76,7 @@ class CreateSubscriptionControllerTest extends TestCase
         $this->subscriptionRepository->method('existsByCompanyId')->willReturn(false);
         $this->subscriptionRepository->method('create')->willThrowException(new \RuntimeException('database down'));
 
-        $response = ($this->controller)($this->input());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
     }
@@ -79,9 +85,12 @@ class CreateSubscriptionControllerTest extends TestCase
     {
         $this->companyRepository->method('existsById')->willReturn(true);
         $this->subscriptionRepository->method('existsByCompanyId')->willReturn(false);
-        $this->subscriptionRepository->method('create')->willReturn('subscription-id');
+        $this->subscriptionRepository->method('create')->willReturnCallback(
+            // The subscription goes to the subdomain's company: there is no company_id in the payload anymore.
+            static fn (string $companyId): string => 'company-id' === $companyId ? 'subscription-id' : 'wrong-company',
+        );
 
-        $response = ($this->controller)($this->input());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_CREATED, $response->getStatusCode());
         self::assertSame(['id' => 'subscription-id'], $this->body($response)['payload']);
@@ -93,7 +102,7 @@ class CreateSubscriptionControllerTest extends TestCase
         $this->subscriptionRepository->method('existsByCompanyId')->willReturn(false);
         $this->subscriptionRepository->method('create')->willReturn('subscription-id');
 
-        $response = ($this->controller)(new CreateSubscriptionInput(companyId: 'company-id', plan: 'free', paymentMethod: null));
+        $response = ($this->controller)(new CreateSubscriptionInput(plan: 'free', paymentMethod: null), $this->company());
 
         self::assertSame(Response::HTTP_CREATED, $response->getStatusCode());
     }
