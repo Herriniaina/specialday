@@ -49,6 +49,17 @@ class CompanyRepository implements CompanyRepositoryInterface
     }
 
     #[\Override]
+    public function findBySlug(string $slug): ?Company
+    {
+        $entity = $this->em->getRepository(CompanyEntity::class)
+            ->findOneBy([
+                'slug' => $slug,
+            ]);
+
+        return null === $entity ? null : $this->toDomain($entity);
+    }
+
+    #[\Override]
     public function existsById(string $id): bool
     {
         return null !== $this->em->find(CompanyEntity::class, $id);

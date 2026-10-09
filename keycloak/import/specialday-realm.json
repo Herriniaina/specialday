@@ -106,11 +106,11 @@
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["https://localhost/admin/*"],
+      "redirectUris": ["https://www.specialday.local/admin/*"],
       "webOrigins": ["+"],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://localhost/admin/*"
+        "post.logout.redirect.uris": "https://www.specialday.local/admin/*"
       },
       "protocolMappers": [
         {

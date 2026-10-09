@@ -64,7 +64,7 @@ class CreateCompany
         $slug = $baseSlug;
         $suffix = 2;
 
-        while ($this->companyRepository->existsBySlug($slug)) {
+        while (Company::isReservedSlug($slug) || $this->companyRepository->existsBySlug($slug)) {
             $slug = \sprintf('%s-%d', $baseSlug, $suffix);
             ++$suffix;
         }

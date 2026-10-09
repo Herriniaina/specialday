@@ -100,6 +100,25 @@ class CreateCompanyTest extends TestCase
         self::assertSame('acme-corp-3', $company->getSlug());
     }
 
+    public function testExecuteNeverUsesAReservedSlug(): void
+    {
+        $request = new CreateCompanyRequest(ownerId: 'owner-id', name: 'WWW');
+
+        $this->slugGenerator->expects(self::once())->method('slugify')->willReturn('www');
+        $this->userRepository->method('findById')->willReturn(self::owner());
+        $this->userRepository->expects(self::once())->method('attachToCompany')->willReturn(true);
+
+        // "www" is skipped without even being looked up: it is reserved, not taken.
+        $this->companyRepository->expects(self::once())
+            ->method('existsBySlug')
+            ->with('www-2')
+            ->willReturn(false);
+
+        $company = $this->createCompany->execute($request);
+
+        self::assertSame('www-2', $company->getSlug());
+    }
+
     public function testExecuteThrowsWhenTheOwnerAlreadyHasACompany(): void
     {
         $this->userRepository->method('findById')->willReturn(self::owner('existing-company-id'));

@@ -4,13 +4,13 @@ namespace App\Infrastructure\Prestation\Http;
 
 use App\Application\Prestation\CreatePrestation;
 use App\Application\Prestation\CreatePrestationRequest;
+use App\Domain\Company\Company;
 use App\Domain\PrestationCategory\PrestationCategoryNotFoundException;
-use App\Infrastructure\Security\Keycloak\ApiUser;
+use App\Infrastructure\Company\Http\CurrentCompany;
 use App\Infrastructure\Shared\Http\ApiAbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class CreatePrestationController extends ApiAbstractController
@@ -21,19 +21,14 @@ final class CreatePrestationController extends ApiAbstractController
     }
 
     #[IsGranted('ROLE_COMPANY_ADMIN')]
-    #[Route('/api/company/prestation', name: 'app_company_prestation_create', methods: ['POST'])]
+    #[Route('/api/prestation', name: 'app_prestation_create', methods: ['POST'])]
     public function __invoke(
         #[MapRequestPayload] CreatePrestationInput $input,
-        #[CurrentUser] ApiUser $user,
+        #[CurrentCompany] Company $company,
     ): JsonResponse {
-        $companyId = $user->companyId;
-        if (null === $companyId) {
-            return $this->forbidden('prestation.company.required');
-        }
-
         try {
             $prestation = $this->createPrestation->execute(new CreatePrestationRequest(
-                companyId: $companyId,
+                companyId: $company->getId(),
                 prestationCategoryId: $input->prestationCategoryId,
                 amount: (int) $input->price->amount,
                 currency: $input->price->currency,

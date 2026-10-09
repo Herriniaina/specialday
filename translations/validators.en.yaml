@@ -15,6 +15,8 @@ company:
         too_long: "Company name cannot be longer than {{ limit }} characters."
     slug:
         not_blank: "Slug cannot be null."
+        invalid: "Slug may only contain lowercase letters, digits and hyphens."
+        reserved: "Slug '{{ value }}' is reserved."
     id:
         invalid: "Company id is not a valid identifier."
     nif:

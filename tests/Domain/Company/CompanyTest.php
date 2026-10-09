@@ -7,6 +7,13 @@ use PHPUnit\Framework\TestCase;
 
 class CompanyTest extends TestCase
 {
+    public function testIsReservedSlug(): void
+    {
+        self::assertTrue(Company::isReservedSlug('www'));
+        self::assertFalse(Company::isReservedSlug('www-2'));
+        self::assertFalse(Company::isReservedSlug('photo-company'));
+    }
+
     public function testConstructorAndGettersExposeProvidedValues(): void
     {
         $createdAt = new \DateTimeImmutable('2026-01-01T10:00:00+00:00');

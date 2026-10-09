@@ -1,0 +1,13 @@
+# CORS of the API: the front (another origin, e.g. http://localhost:3000 in dev) calls the API of
+# each company's subdomain (https://www.<slug>.<APP_DOMAIN>/api/...) with a Bearer token. No
+# cookie is involved, hence no allow_credentials. Options live under the path and not under
+# "defaults", which NelmioCors applies to every unmatched path: the back-office (/admin) must not
+# answer cross-origin requests.
+nelmio_cors:
+    paths:
+        '^/api/':
+            origin_regex: true
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+            allow_headers: ['Content-Type', 'Authorization', 'Accept-Language']
+            max_age: 3600

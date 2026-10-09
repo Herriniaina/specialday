@@ -3,13 +3,13 @@
 namespace App\Tests\Infrastructure\Media\Http;
 
 use App\Application\Media\GetMediaFile;
+use App\Domain\Company\Company;
 use App\Domain\Media\MediaFile;
 use App\Domain\Media\MediaFileRepositoryInterface;
 use App\Domain\Media\MediaStatusEnum;
 use App\Domain\Media\MediaTypeEnum;
 use App\Domain\Media\StorageProviderEnum;
 use App\Infrastructure\Media\Http\GetMediaController;
-use App\Infrastructure\Security\Keycloak\ApiUser;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -26,9 +26,9 @@ class GetMediaControllerTest extends TestCase
         $this->controller = new GetMediaController(new GetMediaFile($this->mediaFileRepository));
     }
 
-    private function companyAdmin(string $companyId = 'company-id'): ApiUser
+    private function company(): Company
     {
-        return new ApiUser('keycloak-id', 'user-id', $companyId, ['ROLE_USER', 'ROLE_COMPANY_ADMIN']);
+        return new Company('company-id', 'Photo Company', 'photo-company', new \DateTimeImmutable());
     }
 
     private function mediaFile(string $companyId): MediaFile
@@ -59,19 +59,11 @@ class GetMediaControllerTest extends TestCase
         return $body;
     }
 
-    public function testReturnsForbiddenWhenUserHasNoCompany(): void
-    {
-        $response = ($this->controller)('media-id', new ApiUser('keycloak-id', 'user-id', null, ['ROLE_USER']));
-
-        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
-        self::assertSame('media.company.required', $this->body($response)['statusText']);
-    }
-
     public function testReturnsNotFoundWhenTheMediaFileDoesNotExist(): void
     {
         $this->mediaFileRepository->method('findById')->willReturn(null);
 
-        $response = ($this->controller)('media-id', $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->company());
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
@@ -80,7 +72,7 @@ class GetMediaControllerTest extends TestCase
     {
         $this->mediaFileRepository->method('findById')->willReturn($this->mediaFile('other-company-id'));
 
-        $response = ($this->controller)('media-id', $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->company());
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         self::assertSame('Media file not found.', $this->body($response)['statusText']);
@@ -90,7 +82,7 @@ class GetMediaControllerTest extends TestCase
     {
         $this->mediaFileRepository->method('findById')->willReturn($this->mediaFile('company-id'));
 
-        $response = ($this->controller)('media-id', $this->companyAdmin());
+        $response = ($this->controller)('media-id', $this->company());
 
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());
         self::assertSame('media-id', $this->body($response)['payload']['id']);

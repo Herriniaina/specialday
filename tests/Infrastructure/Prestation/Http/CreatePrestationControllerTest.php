@@ -4,13 +4,13 @@ namespace App\Tests\Infrastructure\Prestation\Http;
 
 use App\Application\Prestation\CreatePrestation;
 use App\Application\Shared\IdGeneratorInterface;
+use App\Domain\Company\Company;
 use App\Domain\Prestation\Prestation;
 use App\Domain\Prestation\PrestationRepositoryInterface;
 use App\Domain\PrestationCategory\PrestationCategoryRepositoryInterface;
 use App\Infrastructure\Prestation\Http\CreatePrestationController;
 use App\Infrastructure\Prestation\Http\CreatePrestationInput;
 use App\Infrastructure\Prestation\Http\PriceInput;
-use App\Infrastructure\Security\Keycloak\ApiUser;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -47,9 +47,9 @@ class CreatePrestationControllerTest extends TestCase
         );
     }
 
-    private function companyAdmin(): ApiUser
+    private function company(): Company
     {
-        return new ApiUser('keycloak-id', 'user-id', 'company-id', ['ROLE_USER', 'ROLE_COMPANY_ADMIN']);
+        return new Company('company-id', 'Photo Company', 'photo-company', new \DateTimeImmutable());
     }
 
     /**
@@ -63,19 +63,11 @@ class CreatePrestationControllerTest extends TestCase
         return $body;
     }
 
-    public function testReturnsForbiddenWhenUserHasNoCompany(): void
-    {
-        $response = ($this->controller)($this->input(), new ApiUser('keycloak-id', 'user-id', null, ['ROLE_USER']));
-
-        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
-        self::assertSame('prestation.company.required', $this->body($response)['statusText']);
-    }
-
     public function testReturnsNotFoundWhenPrestationCategoryDoesNotExist(): void
     {
         $this->prestationCategoryRepository->method('existsById')->willReturn(false);
 
-        $response = ($this->controller)($this->input(), $this->companyAdmin());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         self::assertSame('Prestation category not found.', $this->body($response)['statusText']);
@@ -86,7 +78,7 @@ class CreatePrestationControllerTest extends TestCase
         $this->prestationCategoryRepository->method('existsById')->willReturn(true);
         $this->prestationRepository->method('save')->willThrowException(new \RuntimeException('database down'));
 
-        $response = ($this->controller)($this->input(), $this->companyAdmin());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
     }
@@ -101,7 +93,7 @@ class CreatePrestationControllerTest extends TestCase
             }
         );
 
-        $response = ($this->controller)($this->input(), $this->companyAdmin());
+        $response = ($this->controller)($this->input(), $this->company());
 
         self::assertSame(Response::HTTP_CREATED, $response->getStatusCode());
         self::assertSame(['id' => 'generated-id'], $this->body($response)['payload']);

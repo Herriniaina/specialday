@@ -19,6 +19,23 @@ services:
       #  from the bind-mount for better performance by enabling the next line:
       #- /app/vendor
     environment:
+      # Main host plus one subdomain per company (https://www.<company>.specialday.local). The
+      # browser resolves them through the hosts file (127.0.0.1), which takes no wildcards: add a
+      # line per company.
+      SERVER_NAME: ${SERVER_NAME:-www.specialday.local}, ${COMPANY_SERVER_NAME:-*.*.specialday.local}, php:80
+      # No certificate can be issued for "*.*.specialday.local": Caddy's local CA issues one per
+      # host on its first TLS handshake instead (dev only, prod needs an "ask" endpoint).
+      CADDY_SERVER_EXTRA_DIRECTIVES: |
+        tls internal {
+        	on_demand
+        }
+      # Keycloak served over HTTPS on the app's own domain (same site as the app and its
+      # subdomains), instead of a published http port.
+      CADDY_EXTRA_CONFIG: |
+        ${KEYCLOAK_SERVER_NAME:-auth.specialday.local} {
+        	tls internal
+        	reverse_proxy keycloak:8080
+        }
       FRANKENPHP_WORKER_CONFIG: watch
       # See https://xdebug.org/docs/all_settings#mode
       XDEBUG_MODE: "${XDEBUG_MODE:-develop}"
@@ -118,7 +135,8 @@ services:
       - "8000:8000"
 
 ###> keycloak ###
-  # Identity provider (OIDC). Console: http://localhost:8080 (admin / admin).
+  # Identity provider (OIDC). Console: https://auth.specialday.local/admin (admin / admin), reverse
+  # proxied by the php service's Caddy (CADDY_EXTRA_CONFIG): no port is published.
   # The "specialday" realm is imported from keycloak/import on first start only: an existing
   # realm is never overwritten (delete it in the console, or remove the keycloak_data volume, to re-import).
   # Storage is start-dev's embedded H2 file database (keycloak_data volume), not MySQL: Keycloak's
@@ -145,10 +163,13 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      # Browser reaches Keycloak at localhost:8080, the php container at keycloak:8080. Pinning the
-      # public URL keeps the token "iss" claim identical for both; backchannel requests (JWKS,
-      # token, admin API) from other containers may still use the internal hostname.
-      KC_HOSTNAME: http://localhost:8080
+      # Browser reaches Keycloak at https://auth.specialday.local (through Caddy), the php container
+      # at keycloak:8080. Pinning the public URL keeps the token "iss" claim identical for both;
+      # backchannel requests (JWKS, token, admin API) from other containers may still use the
+      # internal hostname.
+      KC_HOSTNAME: https://${KEYCLOAK_SERVER_NAME:-auth.specialday.local}
+      # Behind Caddy, which terminates TLS and sends X-Forwarded-* headers.
+      KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HEALTH_ENABLED: "true"
     healthcheck:
@@ -160,8 +181,6 @@ services:
       retries: 10
       # First start builds Quarkus and creates the schema: several minutes on WSL.
       start_period: 300s
-    ports:
-      - "8080:8080"
     volumes:
       # Whole data dir (H2 files under h2/): mounting the image's existing directory keeps its
       # keycloak-user ownership, a fresh h2/ mount point would be root-owned and unwritable.
